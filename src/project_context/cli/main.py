@@ -9,6 +9,12 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from project_context.compiler.fixtures import (
+    load_candidate_file,
+    load_fixture_set,
+    load_request_file,
+)
+from project_context.compiler.policy import CompilerPolicy
 from project_context.corpus.campaign import STATUS_OPEN, CampaignManifest
 from project_context.corpus.campaign_store import (
     add_spool,
@@ -194,6 +200,45 @@ def build_parser() -> argparse.ArgumentParser:
 
     quality = corpus_sub.add_parser("quality", help="Capture-quality report for a campaign.")
     quality.add_argument("--id", required=True, help="Campaign identifier.")
+
+    compiler = sub.add_parser("compiler", help="Deterministic synthetic compiler.")
+    compiler_sub = compiler.add_subparsers(dest="compiler_command", required=True)
+    compiler_sub.add_parser("fixtures", help="List compiler-v1 fixtures and budgets.")
+    comp_inspect = compiler_sub.add_parser(
+        "inspect", help="Compile one fixture and show the trace (synthetic)."
+    )
+    comp_inspect.add_argument("fixture", help="Fixture name under fixtures/compiler-v1.")
+    comp_inspect.add_argument(
+        "--strategy",
+        default="staged",
+        choices=("dump", "topk", "weighted", "gated", "staged", "oracle"),
+        help="Assembly strategy.",
+    )
+    comp_inspect.add_argument(
+        "--budget",
+        default="tight",
+        choices=("tight", "medium", "roomy"),
+        help="Budget regime from the fixture manifest.",
+    )
+    comp_inspect.add_argument(
+        "--format", choices=("text", "json"), default="text", help="Report format."
+    )
+    comp_run = compiler_sub.add_parser("run", help="Run the compiler-v1 suite.")
+    comp_run.add_argument("experiment", choices=("compiler-v1",), help="Experiment family to run.")
+    comp_run.add_argument("--run-id", default=None, help="Run identifier.")
+    comp_run.add_argument("--runs-dir", default=".local/runs", help="Local root for frozen runs.")
+    comp_run.add_argument(
+        "--policy",
+        default="compiler-policy-v1",
+        help="Policy file stem under experiments/compiler-v1/policies.",
+    )
+    comp_run.add_argument(
+        "--timestamp", default=None, help="Manifest timestamp (default: now, UTC)."
+    )
+    comp_validate = compiler_sub.add_parser(
+        "validate-run", help="Validate a frozen compiler run directory."
+    )
+    comp_validate.add_argument("run_dir", help="Run directory to validate.")
     return parser
 
 
@@ -275,6 +320,142 @@ def cmd_opencode_ingest(path_str: str) -> int:
             f"{bundle_bytes(bundle)} bytes / {bundle_chars(bundle)} chars, "
             f"session={bundle.provenance.session_ref if bundle.provenance else None}"
         )
+    return 0
+
+
+COMPILER_FIXTURES_ROOT = Path("fixtures") / "compiler-v1"
+COMPILER_EXPERIMENT_ROOT = Path("experiments") / "compiler-v1"
+COMPILER_STRATEGIES = ("dump", "topk", "weighted", "gated", "staged", "oracle")
+COMPILER_BUDGETS = ("tight", "medium", "roomy")
+
+
+def _compiler_manifest() -> dict[str, Any]:
+    return json.loads((COMPILER_FIXTURES_ROOT / "manifest.json").read_text(encoding="utf-8"))
+
+
+def _compiler_policy(name: str) -> CompilerPolicy:
+    path = COMPILER_EXPERIMENT_ROOT / "policies" / f"{name}.json"
+    return CompilerPolicy.from_dict(json.loads(path.read_text(encoding="utf-8")))
+
+
+def _compiler_weights() -> dict[str, float]:
+    raw = json.loads((COMPILER_EXPERIMENT_ROOT / "weights.json").read_text(encoding="utf-8"))
+    return {
+        "relevance": float(raw["relevance"]),
+        "priority": float(raw["priority"]),
+        "cost": float(raw["cost"]),
+    }
+
+
+def cmd_compiler_fixtures() -> int:
+    manifest = _compiler_manifest()
+    print(f"fixture set: compiler-v1 v{manifest['fixture_version']} [SYNTHETIC]")
+    for name in manifest["fixtures"]:
+        budgets = manifest["budgets"][name]
+        print(
+            f"  {name}: tight={budgets['tight']} "
+            f"medium={budgets['medium']} roomy={budgets['roomy']}"
+        )
+    return 0
+
+
+def cmd_compiler_inspect(fixture: str, strategy: str, budget: str, output_format: str) -> int:
+    from project_context.evaluation.compiler_eval import load_truth_file
+    from project_context.evaluation.compiler_runner import build_strategies, run_one
+
+    manifest = _compiler_manifest()
+    if fixture not in manifest["fixtures"]:
+        print(f"unknown fixture: {fixture}", file=sys.stderr)
+        return 2
+    fixture_set = load_fixture_set(COMPILER_FIXTURES_ROOT)
+    candidates = load_candidate_file(fixture_set[fixture]["candidates"])
+    base = load_request_file(fixture_set[fixture]["request"])
+    request = type(base)(
+        request_id=f"{base.request_id}-{budget}",
+        task_id=base.task_id,
+        usable_token_budget=manifest["budgets"][fixture][budget],
+        created_at=base.created_at,
+        active_scope=base.active_scope,
+        required_ids=base.required_ids,
+        policy_version=base.policy_version,
+    )
+    policy = _compiler_policy(request.policy_version)
+    truth = load_truth_file(COMPILER_FIXTURES_ROOT / f"{fixture}.truth.json")
+    available = build_strategies(_compiler_weights())
+    bundle, trace, reason = run_one(strategy, available, request, candidates, truth, policy)
+    if output_format == "json":
+        print(
+            json.dumps(
+                {
+                    "fixture": fixture,
+                    "strategy": strategy,
+                    "budget": budget,
+                    "budget_tokens": request.usable_token_budget,
+                    "success": bundle is not None,
+                    "reason": reason,
+                    "bundle_id": bundle.id if bundle else None,
+                    "trace": trace.to_dict(),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    print(f"[SYNTHETIC] {fixture} / {strategy} / {budget} ({request.usable_token_budget}t)")
+    if bundle is None:
+        print(f"COMPILE FAILURE: {reason}")
+    else:
+        print(f"bundle {bundle.id}: {len(bundle.items)} items")
+    for entry in trace.entries:
+        position = "" if entry.position is None else f" pos={entry.position}"
+        print(f"  {entry.candidate_id}: {entry.decision.value} ({entry.reason_code}){position}")
+    return 0
+
+
+def cmd_compiler_run(
+    experiment: str,
+    run_id: str | None,
+    runs_dir: str,
+    policy_name: str,
+    timestamp: str | None,
+) -> int:
+    from project_context.evaluation.compiler_runner import run_suite
+
+    _ = experiment
+    manifest = _compiler_manifest()
+    policy = _compiler_policy(policy_name)
+    weights = _compiler_weights()
+    vcs = vcs_info(Path("."))
+    moment = timestamp or _utcnow()
+    resolved_run_id = run_id or f"compiler-v1-{moment.replace(':', '').replace('+', '')}"
+    run_dir = run_suite(
+        fixtures_root=COMPILER_FIXTURES_ROOT,
+        strategies=list(COMPILER_STRATEGIES),
+        budgets=list(COMPILER_BUDGETS),
+        policy=policy,
+        weights=weights,
+        fixture_budgets=manifest["budgets"],
+        expected_by_fixture_budget=manifest["expected"],
+        fixture_version=manifest["fixture_version"],
+        run_id=resolved_run_id,
+        timestamp=moment,
+        git_commit=str(vcs.get("commit") or "unknown"),
+        vcs_dirty=bool(vcs.get("dirty")),
+        out_root=Path(runs_dir),
+    )
+    print(f"frozen compiler run at {run_dir} [SYNTHETIC — NOT BOOK RESULT]")
+    return 0
+
+
+def cmd_compiler_validate_run(run_dir: str) -> int:
+    from project_context.runs.artifacts import validate_artifact
+
+    errors = validate_artifact(Path(run_dir))
+    if errors:
+        for error in errors:
+            print(f"INVALID: {error}", file=sys.stderr)
+        return 3
+    print(f"run valid: {run_dir}")
     return 0
 
 
@@ -531,6 +712,16 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_campaign_add(args.path, args.id, args.source_label)
     if args.command == "corpus" and args.corpus_command == "quality":
         return cmd_corpus_quality(args.id)
+    if args.command == "compiler" and args.compiler_command == "fixtures":
+        return cmd_compiler_fixtures()
+    if args.command == "compiler" and args.compiler_command == "inspect":
+        return cmd_compiler_inspect(args.fixture, args.strategy, args.budget, args.format)
+    if args.command == "compiler" and args.compiler_command == "run":
+        return cmd_compiler_run(
+            args.experiment, args.run_id, args.runs_dir, args.policy, args.timestamp
+        )
+    if args.command == "compiler" and args.compiler_command == "validate-run":
+        return cmd_compiler_validate_run(args.run_dir)
     return 2
 
 

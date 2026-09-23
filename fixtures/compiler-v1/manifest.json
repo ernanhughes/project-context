@@ -1,0 +1,293 @@
+{
+  "budgets": {
+    "budget-slack": {
+      "medium": 600,
+      "roomy": 3000,
+      "tight": 300
+    },
+    "conflict-trap": {
+      "medium": 800,
+      "roomy": 1500,
+      "tight": 450
+    },
+    "dependency-cycle": {
+      "medium": 900,
+      "roomy": 1800,
+      "tight": 500
+    },
+    "dependency-trap": {
+      "medium": 1400,
+      "roomy": 2200,
+      "tight": 900
+    },
+    "heterogeneous-basic": {
+      "medium": 900,
+      "roomy": 2000,
+      "tight": 500
+    },
+    "mandatory-overflow": {
+      "medium": 4400,
+      "roomy": 5000,
+      "tight": 4000
+    },
+    "no-legal-representation": {
+      "medium": 1200,
+      "roomy": 2000,
+      "tight": 800
+    },
+    "qualification-trap": {
+      "medium": 800,
+      "roomy": 1500,
+      "tight": 480
+    },
+    "rendered-overflow": {
+      "medium": 600,
+      "roomy": 1800,
+      "tight": 250
+    },
+    "representation-alternatives": {
+      "medium": 700,
+      "roomy": 2000,
+      "tight": 550
+    },
+    "required-unavailable": {
+      "medium": 900,
+      "roomy": 1800,
+      "tight": 500
+    },
+    "shared-dependency": {
+      "medium": 900,
+      "roomy": 1800,
+      "tight": 600
+    },
+    "stale-cheap": {
+      "medium": 1200,
+      "roomy": 2000,
+      "tight": 800
+    },
+    "wrong-scope": {
+      "medium": 900,
+      "roomy": 1800,
+      "tight": 500
+    }
+  },
+  "evidence_class": "synthetic",
+  "evidence_note": "SYNTHETIC \u2014 NOT BOOK RESULT. Deterministic synthetic compiler fixtures. Token counts are stipulated fixture inputs (token_source fixture-declared), not measurements.",
+  "expected": {
+    "budget-slack": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "conflict-trap": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "dependency-cycle": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "dependency-trap": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "heterogeneous-basic": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "mandatory-overflow": {
+      "medium": {
+        "reason": "INSUFFICIENT_BUDGET",
+        "success": false
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": "INSUFFICIENT_BUDGET",
+        "success": false
+      }
+    },
+    "no-legal-representation": {
+      "medium": {
+        "reason": "NO_LEGAL_REPRESENTATION",
+        "success": false
+      },
+      "roomy": {
+        "reason": "NO_LEGAL_REPRESENTATION",
+        "success": false
+      },
+      "tight": {
+        "reason": "NO_LEGAL_REPRESENTATION",
+        "success": false
+      }
+    },
+    "qualification-trap": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "rendered-overflow": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "representation-alternatives": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "required-unavailable": {
+      "medium": {
+        "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+        "success": false
+      },
+      "roomy": {
+        "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+        "success": false
+      },
+      "tight": {
+        "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+        "success": false
+      }
+    },
+    "shared-dependency": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "stale-cheap": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    },
+    "wrong-scope": {
+      "medium": {
+        "reason": null,
+        "success": true
+      },
+      "roomy": {
+        "reason": null,
+        "success": true
+      },
+      "tight": {
+        "reason": null,
+        "success": true
+      }
+    }
+  },
+  "fixture_set": "compiler-v1",
+  "fixture_version": "1",
+  "fixtures": [
+    "budget-slack",
+    "conflict-trap",
+    "dependency-cycle",
+    "dependency-trap",
+    "heterogeneous-basic",
+    "mandatory-overflow",
+    "no-legal-representation",
+    "qualification-trap",
+    "rendered-overflow",
+    "representation-alternatives",
+    "required-unavailable",
+    "shared-dependency",
+    "stale-cheap",
+    "wrong-scope"
+  ],
+  "token_mode": "fixture-declared-counts"
+}

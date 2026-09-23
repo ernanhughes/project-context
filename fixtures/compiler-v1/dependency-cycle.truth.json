@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "cyc-a": {
+      "eval_class": "should",
+      "min_representation": "full"
+    },
+    "cyc-b": {
+      "eval_class": "should",
+      "min_representation": "full"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

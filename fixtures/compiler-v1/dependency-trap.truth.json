@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "distract-big": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "incident": {
+      "eval_class": "should",
+      "min_representation": "reference"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "resolver": {
+      "eval_class": "should",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

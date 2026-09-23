@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "claim-a": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "claim-b": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "conflict-marker": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

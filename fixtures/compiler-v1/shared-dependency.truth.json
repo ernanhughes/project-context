@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "ref-a": {
+      "eval_class": "should",
+      "min_representation": "reference"
+    },
+    "ref-b": {
+      "eval_class": "should",
+      "min_representation": "reference"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "tool-def": {
+      "eval_class": "should",
+      "min_representation": "full"
+    }
+  }
+}

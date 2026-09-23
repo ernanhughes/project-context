@@ -40,6 +40,34 @@ Compiler, real provider adapters, the OpenCode capture adapter, real
 corpus traces. See `docs/stage-0-report.md` for the deferred list and
 `specs/architecture.md` for the record map.
 
+## Stage 3 scope (current)
+
+Deterministic synthetic Context Compiler (book Chapter 22 contract).
+Implemented:
+
+- versioned compiler records (`ContextCandidate`, `ContextRequest`,
+  `CompilerPolicy`, `DecisionTrace`, `CompileFailure`) in
+  `src/project_context/compiler/`, reusing `ContextItem`/`ContextBundle`
+  without modifying them;
+- staged deterministic assembly: hard eligibility gates, legal
+  representation alternatives with mutual exclusion, dependency closure
+  with shared-cost accounting, required groups, band-ordered budgeted
+  admission with coverage, deterministic ordering, exact-render
+  validation with discretionary-only repair, explicit `CompileFailure`;
+- hidden evaluator truth, oracle ceiling, and bundle-quality evaluator
+  under `src/project_context/evaluation/` (production compiler cannot
+  import them; tests pin the direction);
+- `fixtures/compiler-v1/` (14 synthetic fixtures incl. the seven
+  required traps) and `experiments/compiler-v1/` (frozen spec, fixed
+  weights, versioned policy);
+- `contextlab compiler fixtures|inspect|run|validate-run` CLI;
+- frozen local runs under `.local/runs/` (git-ignored; PROJECT RESULT,
+  never book evidence until promoted).
+
+Explicitly **not implemented**: models, network calls, learned rankers,
+retrieval/memory/artifact systems, ecological corpus dependence,
+behavioural evaluation (Chapter 23 owns it). See `docs/stage-3-report.md`.
+
 ## Setup
 
 Requires Python 3.11+ (3.12+ preferred) and [`uv`](https://docs.astral.sh/uv/).
@@ -55,7 +83,7 @@ contextlab fixture inspect reference
 ## Layout
 
 ```text
-src/project_context/   domain records, fixtures, evaluation,
+src/project_context/   domain records, compiler, fixtures, evaluation,
                        providers, corpus manifests, run artifacts, CLI
 experiments/           per-experiment specs and runners (convention only)
 fixtures/              committed synthetic fixture manifests

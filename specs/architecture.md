@@ -78,3 +78,30 @@ after these hooks; later-registered plugins may mutate after capture
 (load the adapter last); per-tool definitions, generation settings, and
 compaction observation are deferred. A future V2 adapter reuses the
 bridge schema with full system/messages/tools/options blocks.
+
+## Stage 3 — deterministic synthetic compiler (book Chapter 22)
+
+`src/project_context/compiler/` implements the staged assembly
+contract; `src/project_context/evaluation/compiler_*.py` holds hidden
+truth, baselines, oracle, evaluator, and the suite runner. Production
+compiler code must never import evaluation code.
+
+```text
+ContextRequest + ContextCandidate[] + CompilerPolicy + budget
+        ↓  hard eligibility gates
+legal representation alternatives (mutual exclusion, floors)
+        ↓  dependency closure (shared costs counted once)
+required groups (all-of, atomic)
+        ↓  band-ordered budgeted admission (coverage, earn rule)
+deterministic ordering
+        ↓  exact render + validation + discretionary-only repair
+ContextBundle + DecisionTrace  |  CompileFailure
+```
+
+Token accounting is fixture-declared (`token_mode:
+fixture-declared-counts`); render adds deterministic source/kind
+decoration, separators, and a bundle header, validated exactly.
+Evaluator truth (`MUST/SHOULD/OPTIONAL/DISTRACTOR/HARMFUL`, oracle
+minima, expected outcomes) lives in `fixtures/compiler-v1/*.truth.json`
+and is loaded only by evaluation code. Frozen runs:
+`runs/compiler-v1/<run-id>/` via `contextlab compiler run`.

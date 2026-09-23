@@ -1,0 +1,24 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "alt-resolver": {
+      "eval_class": "optional",
+      "min_representation": "full"
+    },
+    "incident": {
+      "eval_class": "must",
+      "min_representation": "compact"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

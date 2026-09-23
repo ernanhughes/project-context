@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "claim-positive": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "distract-2": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "exception-tenant": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "expected": {
+    "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+    "success": false
+  },
+  "identity_truth": {
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

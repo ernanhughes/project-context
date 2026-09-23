@@ -1,0 +1,8 @@
+{
+  "schema_version": "project_context.compiler_policy.v1",
+  "policy_version": "compiler-policy-v1",
+  "min_discretionary_relevance": 0.3,
+  "mandatory_form": "cheapest",
+  "order_roles": ["instruction", "task", "state", "evidence", "support", "tool"],
+  "repair": "drop-last-discretionary"
+}

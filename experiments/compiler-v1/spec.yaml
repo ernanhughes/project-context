@@ -1,0 +1,41 @@
+# Frozen experiment contract: compiler-v1. See specs/experiment-contract.md.
+question: >-
+  Given a fixed heterogeneous candidate pool and finite token budget, can a
+  deterministic staged compiler produce a policy-valid bundle with higher
+  required-information coverage and fewer illegal/harmful admissions than
+  dump, top-k, weighted, and hard-gated greedy baselines?
+hypotheses: [H1-hard-gates, H2-dependency-costing, H3-representation-choice,
+  H4-explicit-failure, H5-slack]
+population: fixtures/compiler-v1 manifest v1 (14 synthetic fixtures)
+independent_variable: assembly strategy
+controlled_variables:
+  - candidate pool per fixture (frozen JSON)
+  - usable budget per regime (manifest: tight/medium/roomy)
+  - token counting: fixture-declared counts (token_mode fixture-declared-counts)
+  - policy: compiler-policy-v1
+  - weighted-baseline weights: experiments/compiler-v1/weights.json (fixed)
+  - ordering: deterministic role order + candidate_id tiebreak
+  - no models, no network, no retrieval, no memory system
+conditions: [dump, topk, weighted, gated, staged, oracle]
+measurements:
+  - budget_compliant, status_correct
+  - must_recall, should_recall, precision
+  - distractor_admission, harmful_admission, illegal_admission
+  - scope/freshness/authority/floor/dependency/group violations
+  - rendered_tokens, budget_slack
+  - under/over_admission, oracle gaps (tokens, must, should)
+success_criteria:
+  - staged: zero illegal admissions; must_recall 1.0 on feasible fixtures;
+    expected failures with matching reason codes; positive slack on slack trap
+  - baselines: measured as-is for comparison, not required to pass
+failure_criteria:
+  - any staged illegal admission
+  - any staged feasible-fixture must miss
+  - any expected-failure mismatch
+  - nondeterministic rerun output
+falsification:
+  - gated-greedy parity, unused dependency costing, unused alternatives,
+    violation-free weighted packing, irrelevant required groups
+seed_strategy: none required (no randomness anywhere in the pipeline)
+provider_model: synthetic, no model calls
+cost_ceiling: zero spend (offline suite)

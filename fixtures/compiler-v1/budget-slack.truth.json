@@ -1,0 +1,28 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "distract-d1": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "distract-d2": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "useful-disc": {
+      "eval_class": "should",
+      "min_representation": "full"
+    }
+  }
+}

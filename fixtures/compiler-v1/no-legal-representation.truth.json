@@ -1,0 +1,20 @@
+{
+  "expected": {
+    "reason": "NO_LEGAL_REPRESENTATION",
+    "success": false
+  },
+  "identity_truth": {
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "mand-low": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    }
+  }
+}

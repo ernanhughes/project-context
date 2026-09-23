@@ -52,6 +52,35 @@ APIs, no search-and-kill by process name, no TUI lifecycle management,
 no ownership claims over pre-existing sessions. Capture is user-driven;
 analysis reads files. A source scan test pins this invariant.
 
+## Stage 3 compiler invariants
+
+19. **Hard illegality cannot be laundered through relevance.** A
+    scope/freshness/authority/floor rejection is terminal; no score,
+    rank, or weight revives the candidate.
+20. **No silent mandatory truncation.** Minimum legal content that does
+    not fit is `CompileFailure`, never a shortened bundle.
+21. **No final-render slicing.** Overruns repair by policy-governed
+    removal and rerender, or fail.
+22. **Hidden oracle truth never enters compiler runtime.** Truth files,
+    evaluator labels, and oracle minima live under evaluation code and
+    fixture truth files; production compiler modules must not import
+    them. Tests pin the import direction and the absence of oracle
+    identifiers in compiler sources.
+23. **Compile failure is a valid expected result.** Mandatory overflow,
+    missing required sources, and illegal representations must fail
+    loudly with reason codes; tests assert exact failures.
+24. **Successful bundles must validate.** Rendered cost within budget,
+    mandatory presence, floors, closures, and layout invariants hold on
+    every emitted bundle.
+25. **No model or network calls in compiler-v1.** The suite runs fully
+    offline; relevance scores are fixture inputs. A source scan test pins
+    the forbidden imports.
+26. **Policy revisions require full-suite replay.** New policy versions
+    rerun every fixture/strategy/budget; historic runs are never edited.
+27. **Synthetic results are not ecological evidence.** Frozen compiler
+    runs are PROJECT RESULTs about fixture mechanics, never claims about
+    real OpenCode contexts or model behaviour.
+
 ## Stage 1 capture rules
 
 11. **Capture is opt-in and off by default.** Never enable raw recording

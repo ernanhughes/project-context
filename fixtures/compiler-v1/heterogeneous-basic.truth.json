@@ -1,0 +1,48 @@
+{
+  "expected": {
+    "reason": null,
+    "success": true
+  },
+  "identity_truth": {
+    "anchor-disc": {
+      "eval_class": "optional",
+      "min_representation": "full"
+    },
+    "distract-h": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "harmful-h": {
+      "eval_class": "harmful",
+      "min_representation": "full"
+    },
+    "instr": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "mem-pref": {
+      "eval_class": "should",
+      "min_representation": "full"
+    },
+    "rule-req": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "scope-bad": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "stale-bad": {
+      "eval_class": "distractor",
+      "min_representation": "full"
+    },
+    "taskreq": {
+      "eval_class": "must",
+      "min_representation": "full"
+    },
+    "tool-disc": {
+      "eval_class": "optional",
+      "min_representation": "full"
+    }
+  }
+}

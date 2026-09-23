@@ -1,0 +1,7 @@
+{
+  "weights_id": "compiler-v1-weighted-baseline-v1",
+  "note": "Fixed before any run. Never tuned from hidden truth or outcomes.",
+  "relevance": 1.0,
+  "priority": 0.5,
+  "cost": 1.0
+}
