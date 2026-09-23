@@ -674,3 +674,29 @@ def test_cli_behavior_smoke(capsys):
     out = capsys.readouterr().out
     assert "54 cases" in out
     assert cli_main(["behavior", "dry-run", "--reader", "fake"]) == 0
+
+
+def test_cli_validate_run_on_fake_suite(tmp_path):
+    from project_context.behavior.runner import build_schedule, run_suite
+    from project_context.cli.main import main as cli_main
+
+    manifest = load_manifest(ROOT / "manifest.json")
+    schedule = build_schedule(manifest, manifest["schedule_seed"], reader="fake")[:3]
+    run_dir = run_suite(
+        behavior_root=ROOT,
+        source=BundleSource(SOURCE_RUN, COMPILER_ROOT),
+        adapter=FakeReader(),
+        reader_name="fake",
+        temperature=0.0,
+        seed=1,
+        max_tokens=64,
+        schedule=schedule,
+        max_calls=1000,
+        run_id="val",
+        timestamp="2026-09-23T00:00:00Z",
+        git_commit="test",
+        vcs_dirty=False,
+        out_root=tmp_path,
+    )
+    assert cli_main(["behavior", "validate-run", str(run_dir)]) == 0
+    assert cli_main(["behavior", "validate-run", str(tmp_path / "missing")]) == 3

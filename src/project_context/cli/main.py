@@ -770,7 +770,7 @@ def cmd_behavior_validate_run(run_dir: str) -> int:
 
     root = Path(run_dir)
     errors = validate_artifact(root)
-    for name in ("behavior.jsonl", "invocations.jsonl", "case_schedule.json"):
+    for name in ("behavior.jsonl", "invocations.jsonl"):
         path = root / name
         if not path.is_file():
             errors.append(f"missing required behavior file: {name}")
@@ -781,12 +781,23 @@ def cmd_behavior_validate_run(run_dir: str) -> int:
                     json.loads(line)
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             errors.append(f"{name} unreadable: {exc}")
+    schedule_path = root / "case_schedule.json"
+    if not schedule_path.is_file():
+        errors.append("missing required behavior file: case_schedule.json")
+    else:
+        try:
+            schedule_doc = json.loads(schedule_path.read_text(encoding="utf-8"))
+            if not isinstance(schedule_doc, list):
+                errors.append("case_schedule.json is not a case list")
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            errors.append(f"case_schedule.json unreadable: {exc}")
+            schedule_doc = []
     if errors:
         for error in errors:
             print(f"INVALID: {error}", file=sys.stderr)
         return 3
     # Cross-check: every scheduled case has behaviour + invocation records.
-    schedule = json.loads((root / "case_schedule.json").read_text(encoding="utf-8"))
+    schedule = schedule_doc
     behavior_ids = {
         json.loads(line)["record"]["experiment_case_id"]
         for line in (root / "behavior.jsonl").read_text(encoding="utf-8").splitlines()
