@@ -566,7 +566,7 @@ def _resolve_reader(name: str):
 
         manifest = _behavior_manifest()
         model = manifest["readers"][name]["model"]
-        base_url = os.environ.get("CONTEXTLAB_READER_BASE_URL", "http://localhost:11434")
+        base_url = os.environ.get("CONTEXTLAB_READER_BASE_URL", "http://localhost:11434/v1")
         return OpenAIChatAdapter(
             OpenAIChatConfig(
                 base_url=base_url,

@@ -55,7 +55,10 @@ class OpenAIChatConfig:
 
 class OpenAIChatAdapter:
     """Single-shot chat completions reader. No sessions, no tools, no
-    retrieval: one POST per invoke, connection closed afterwards."""
+    retrieval: one POST per invoke, connection closed afterwards.
+
+    base_url is the OpenAI-compatible API root, e.g.
+    http://localhost:11434/v1 — `/chat/completions` is appended."""
 
     def __init__(
         self,
