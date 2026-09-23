@@ -46,3 +46,27 @@ from the book remains the ecological bar.
 Task text, prompts, file contents, paths, repository names, session or
 message IDs, user information, secrets. Manifests carry counts, ranges,
 hashes of sanitised artifacts, and statuses only.
+
+## Session identity (operational definition)
+
+A campaign session is the set of validated bridge records sharing one
+provenance session reference (`session_ref`), as carried by the
+`experimental.chat.system.transform`, `chat.message`, and
+`tool.execute.after` hooks, plus per-part session linkage inside
+message-list snapshots. Records without any session scope are
+`unlinked`: counted separately, never merged into a fictitious session,
+and excluded from session-scoped analyses (growth, shared prefix) with
+an explicit reason. One OpenCode session may still split across
+identities if hooks disagree; the campaign records what was observed,
+not what was assumed.
+
+## Capture completeness (operational definition)
+
+`complete_capture` is true for a session when all its contributing
+files parsed without skipped lines, no invalid records were attributed
+to it, and at least one validated record exists. It means: all expected
+Stage 1 observer records for the session arrived without known adapter
+interruption. It does NOT mean complete provider context: tool
+definitions, generation settings, usage telemetry, and transport detail
+remain outside the V1 boundary, and compaction is separately hooked.
+A session can be observer-complete and provider-incomplete at once.

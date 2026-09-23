@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 from project_context.corpus.manifest import scan_text_for_secrets
@@ -10,6 +11,35 @@ from project_context.domain.evaluation import EvaluationLog
 from project_context.domain.runs import RunManifest
 
 REQUIRED_FILES = ("manifest.json", "observations.jsonl", "results.json", "README.md")
+
+
+def vcs_info(cwd: Path) -> dict[str, object]:
+    """Best-effort version stamp for analysis reports. Never raises:
+    outside a git checkout every field degrades to explicit unknowns."""
+    try:
+        commit = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {"available": False, "commit": None, "dirty": None}
+    if commit.returncode != 0:
+        return {"available": False, "commit": None, "dirty": None}
+    return {
+        "available": True,
+        "commit": commit.stdout.strip(),
+        "dirty": bool(status.stdout.strip()),
+    }
 
 
 def write_artifact(

@@ -20,6 +20,28 @@ from project_context.domain.bundles import ContextBundle
 
 ANALYSER_VERSION = "0.1.0"
 
+UNOBSERVED = "UNOBSERVED"
+"""First-class unobserved marker. Rendered in reports wherever the V1
+boundary cannot see a category (e.g. tool definitions). Never zero."""
+
+
+def dist(values: list[float]) -> dict[str, Any]:
+    """Distribution summary. High percentiles only with n>=20; small
+    samples report min/median/max to avoid implying population precision."""
+    if not values:
+        return {"n": 0}
+    ordered = sorted(values)
+    summary: dict[str, Any] = {
+        "n": len(ordered),
+        "min": ordered[0],
+        "median": ordered[len(ordered) // 2],
+        "max": ordered[-1],
+    }
+    if len(ordered) >= 20:
+        summary["p75"] = ordered[int(len(ordered) * 0.75)]
+        summary["p90"] = ordered[int(len(ordered) * 0.90)]
+    return summary
+
 
 def fingerprint(text: str) -> str:
     """Canonical local fingerprint for repetition analysis. Local-only:
@@ -38,6 +60,58 @@ def bundle_chars(bundle: ContextBundle) -> int:
 
 def _kind_of(item: Any) -> str:
     return str(item.kind)
+
+
+ROLE_CATEGORIES = (
+    "system",
+    "user",
+    "assistant",
+    "tool_call",
+    "tool_result",
+    "other",
+)
+
+
+def role_of_kind(kind: str) -> str:
+    """Map ingester kinds to prevalence roles. Unknown kinds fall into
+    other/opaque; never inferred beyond the mapping."""
+    mapping = {
+        "system_instruction": "system",
+        "conversation_user": "user",
+        "conversation_assistant": "assistant",
+        "text_part": "other",
+        "reasoning_part": "assistant",
+        "tool_call": "tool_call",
+        "tool_result": "tool_result",
+        "other_message_part": "other",
+    }
+    return mapping.get(kind, "other")
+
+
+def composition_report(bundles: list[ContextBundle]) -> dict[str, Any]:
+    """Share by role category in bytes, chars, and item counts. Tool
+    definitions are UNOBSERVED at the V1 boundary: reported as such,
+    never as zero."""
+    bytes_by_role: Counter[str] = Counter()
+    items_by_role: Counter[str] = Counter()
+    for bundle in bundles:
+        for item in bundle.items:
+            role = role_of_kind(item.kind)
+            size = len(item.content.encode("utf-8"))
+            bytes_by_role[role] += size
+            items_by_role[role] += 1
+    total = sum(bytes_by_role.values())
+    return {
+        "analyser_version": ANALYSER_VERSION,
+        "bytes_by_role": dict(sorted(bytes_by_role.items())),
+        "items_by_role": dict(sorted(items_by_role.items())),
+        "total_bytes": total,
+        "tool_definitions": UNOBSERVED,
+        "tool_definitions_note": (
+            "Tool definitions are not exposed by the OpenCode 1.18.27/V1 "
+            "public hook boundary; unobserved is not zero."
+        ),
+    }
 
 
 def analyse_bundles(bundles: list[ContextBundle]) -> dict[str, Any]:
@@ -160,17 +234,35 @@ EXPORT_NOTE = (
 )
 
 
+SESSION_SECTIONS = (
+    "growth_by_session",
+    "timelines",
+    "churn_positions",
+    "prefix_survival",
+    "durations_minutes",
+)
+
+
 def export_report(report: dict[str, Any]) -> dict[str, Any]:
-    """Produce a publishable aggregate: session-keyed growth series are
-    re-keyed to opaque ordinals (shape preserved, identities removed).
-    Everything else in our analyses is already aggregate numerics."""
+    """Produce a publishable aggregate: session-keyed mappings are
+    re-keyed to opaque publication ids (S01, S02, ...) shared across
+    sections so series stay joinable without identities."""
     exported = json.loads(json.dumps(report, sort_keys=True))
-    growth = exported.get("growth_by_session")
-    if isinstance(growth, dict):
-        relabelled = {}
-        for index, key in enumerate(sorted(growth), start=1):
-            relabelled[f"session-{index:03d}"] = growth[key]
-        exported["growth_by_session"] = relabelled
+    union: list[str] = []
+    for section in SESSION_SECTIONS:
+        mapping = exported.get(section)
+        if isinstance(mapping, dict):
+            for key in mapping:
+                if key not in union:
+                    union.append(key)
+    relabel = {key: f"S{i:02d}" for i, key in enumerate(sorted(union), start=1)}
+    for section in SESSION_SECTIONS:
+        mapping = exported.get(section)
+        if isinstance(mapping, dict):
+            exported[section] = {
+                relabel.get(key, f"S00-{index}"): value
+                for index, (key, value) in enumerate(sorted(mapping.items()))
+            }
     return exported
 
 
@@ -205,9 +297,9 @@ def assert_exportable(report: dict[str, Any]) -> list[str]:
             for key, value in node.items():
                 if str(key).lower() in FORBIDDEN_FIELD_NAMES:
                     text_keys.append(path + "/" + str(key))
-                if str(key).lower() == "growth_by_session" and isinstance(value, dict):
+                if str(key).lower() in SESSION_SECTIONS and isinstance(value, dict):
                     for sub in value:
-                        if not re.fullmatch(r"session-\d{3}", str(sub)):
+                        if not re.fullmatch(r"S\d{2}", str(sub)):
                             text_keys.append(f"{path}/{key}/{sub} (unrelabelled session)")
                 walk(value, path + "/" + str(key))
         elif isinstance(node, list):
@@ -220,3 +312,175 @@ def assert_exportable(report: dict[str, Any]) -> list[str]:
     if scan_text_for_secrets(blob):
         errors.append("report matches secret patterns")
     return errors
+
+
+def session_bundles(
+    bundles: list[ContextBundle],
+) -> dict[str, list[ContextBundle]]:
+    """Group bundles by session scope. Unlinked bundles (no session_ref)
+    are returned under their own per-bundle scope so they never merge
+    into a fictitious session."""
+    grouped: dict[str, list[ContextBundle]] = {}
+    for bundle in bundles:
+        session = bundle.provenance.session_ref if bundle.provenance else None
+        key = session if session else f"unlinked:{bundle.id}"
+        grouped.setdefault(key, []).append(bundle)
+    return grouped
+
+
+def session_timeline(session: str, ordered: list[ContextBundle]) -> list[dict[str, object]]:
+    """Per-invocation structural timeline: sizes, composition, novelty,
+    and shared prefix against the previous bundle. Content-free."""
+    seen: set[str] = set()
+    timeline: list[dict[str, object]] = []
+    previous: ContextBundle | None = None
+    for index, bundle in enumerate(ordered):
+        kinds: dict[str, int] = {}
+        new_bytes = 0
+        size = 0
+        for item in bundle.items:
+            size += len(item.content.encode("utf-8"))
+            kinds[item.kind] = kinds.get(item.kind, 0) + 1
+            digest = fingerprint(item.content)
+            if digest not in seen:
+                new_bytes += len(item.content.encode("utf-8"))
+                seen.add(digest)
+        prefix = structural_shared_prefix(previous, bundle) if previous else None
+        timeline.append(
+            {
+                "invocation_index": index + 1,
+                "items": len(bundle.items),
+                "bytes": size,
+                "chars": bundle_chars(bundle),
+                "kinds": kinds,
+                "new_bytes": new_bytes,
+                "shared_prefix": prefix,
+            }
+        )
+        previous = bundle
+    _ = session
+    return timeline
+
+
+def churn_positions(ordered: list[ContextBundle]) -> list[float | None]:
+    """Normalised first-divergence position per consecutive pair: 0.0 at
+    the beginning, 1.0 at the end, None when fully identical."""
+    positions: list[float | None] = []
+    for earlier, later in zip(ordered, ordered[1:]):
+        result = structural_shared_prefix(earlier, later)
+        if not result.get("comparable"):
+            positions.append(None)
+            continue
+        later_items = result.get("later_items") or 0
+        if later_items == 0:
+            positions.append(None)
+            continue
+        shared = result.get("shared_item_count") or 0
+        if shared >= later_items:
+            positions.append(None)
+        else:
+            positions.append(shared / later_items)
+    return positions
+
+
+def prefix_survival(ordered: list[ContextBundle], horizon: int) -> int | None:
+    """Longest shared prefix surviving across the first `horizon`
+    invocations: the minimum consecutive shared-item count. None when
+    the session is shorter than the horizon or scopes refuse."""
+    if len(ordered) < horizon or horizon < 2:
+        return None
+    shared_counts: list[int] = []
+    for earlier, later in zip(ordered[:horizon], ordered[1:horizon]):
+        result = structural_shared_prefix(earlier, later)
+        if not result.get("comparable"):
+            return None
+        shared_counts.append(int(result.get("shared_item_count") or 0))
+    return min(shared_counts) if shared_counts else None
+
+
+def tool_result_stats(bundles: list[ContextBundle]) -> dict[str, object]:
+    """Tool-result prevalence: counts, bytes, share, growth, largest
+    item, recurrence. Contents never leave this function except as
+    numbers; tool arguments and paths are not separate fields anywhere
+    in Stage 1 records."""
+    sizes: list[int] = []
+    largest = 0
+    seen: set[str] = set()
+    recurring_bytes = 0
+    for bundle in bundles:
+        for item in bundle.items:
+            if item.kind != "tool_result":
+                continue
+            size = len(item.content.encode("utf-8"))
+            sizes.append(size)
+            largest = max(largest, size)
+            digest = fingerprint(item.content)
+            if digest in seen:
+                recurring_bytes += size
+            else:
+                seen.add(digest)
+    total_tool = sum(sizes)
+    return {
+        "analyser_version": ANALYSER_VERSION,
+        "items": len(sizes),
+        "bytes": total_tool,
+        "size_dist": dist([float(v) for v in sizes]),
+        "largest_item_bytes": largest,
+        "recurring_bytes": recurring_bytes,
+        "distinct_payloads": len(seen),
+    }
+
+
+def session_weighted_tool_share(
+    sessions: dict[str, list[ContextBundle]],
+) -> dict[str, object]:
+    """Tool-result byte share computed two ways. Invocation-weighted
+    divides global tool bytes by global bytes (long sessions dominate).
+    Session-weighted averages per-session shares (each session one vote).
+    Both denominators are stated; neither is 'the' share."""
+    global_tool = 0
+    global_total = 0
+    per_session: list[float] = []
+    for ordered in sessions.values():
+        session_tool = 0
+        session_total = 0
+        for bundle in ordered:
+            for item in bundle.items:
+                size = len(item.content.encode("utf-8"))
+                session_total += size
+                if item.kind == "tool_result":
+                    session_tool += size
+        global_tool += session_tool
+        global_total += session_total
+        if session_total > 0:
+            per_session.append(session_tool / session_total)
+    return {
+        "analyser_version": ANALYSER_VERSION,
+        "invocation_weighted_share": (global_tool / global_total) if global_total else 0.0,
+        "session_weighted_share": (sum(per_session) / len(per_session)) if per_session else 0.0,
+        "sessions": len(per_session),
+    }
+
+
+def duration_minutes(records: list[dict[str, object]]) -> float | None:
+    """Normalised duration between first and last capture timestamps in
+    a session's records. Absolute timestamps never leave the spool;
+    only this duration may be exported."""
+    stamps: list[str] = []
+    for record in records:
+        captured = record.get("captured_at")
+        if isinstance(captured, str):
+            stamps.append(captured)
+    if len(stamps) < 2:
+        return None
+    try:
+        from datetime import datetime, timezone
+
+        parsed = [
+            datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(timezone.utc)
+            for s in stamps
+        ]
+    except ValueError:
+        return None
+    delta = (max(parsed) - min(parsed)).total_seconds() / 60.0
+    return max(0.0, delta)
