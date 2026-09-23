@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Stage 0: local-only evidence and raw corpus material must never be committed.
+.local/
+raw-corpus/
+private-runs/
+runs/*/
+!runs/README.md

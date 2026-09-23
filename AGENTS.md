@@ -1,0 +1,50 @@
+# AGENTS.md — project-context
+
+Instructions for coding agents working in this repository. The companion
+book repository (`ernanhughes/context`) owns exposition; this repository
+owns executable evidence. Never confuse the two.
+
+## Standing rules
+
+1. **Observation before intervention.** Context Lab v0 observes without
+   changing invocations. Add a mechanism only when a frozen book
+   experiment has earned it. Proposed stages live in `README.md` and
+   `specs/architecture.md`; do not jump ahead.
+2. **Never fabricate results.** No invented benchmark numbers, run
+   outputs, or telemetry. Synthetic fixtures are labelled `synthetic`
+   at creation, in CLI output, and in artifacts. Synthetic is never book
+   evidence, no matter how realistic.
+3. **Provenance always.** Every number carries its source
+   (`provider`, `local-tokenizer`, `approximation`, `unavailable`).
+   Unavailable stays `None`, never zero. Costs reference an explicit
+   `PriceSchedule` version. Runs reference experiment version, fixture
+   version, seed, and git commit.
+4. **Hidden truth stays hidden.** Fixture probes, oracle labels, and
+   evaluator mappings must never render into model-visible context.
+   Add or keep a test pinning this for every fixture.
+5. **Private corpus data stays local.** Never commit raw traces,
+   credentials, private code, prompts, or personal data. Publication
+   requires sanitisation plus recorded human approval
+   (`specs/privacy.md`). When in doubt, keep it in `.local/`.
+6. **Deterministic fixtures before real traces.** Causal claims come
+   from fixtures with ground truth; real traces establish ecological
+   relevance only. Never treat a real trace as labelled ground truth.
+7. **Independent mechanisms, no copying.** Study third-party
+   implementations (notably DCP, AGPL-3.0-or-later) without importing
+   their code. Record licences when studying behaviour. Keep this
+   repository Apache-2.0-clean: no AGPL source, no vendored snippets.
+8. **Small diffs, boring code.** Prefer stdlib and explicit schemas over
+   frameworks. Experiment-specific code lives under `experiments/`;
+   promote to `src/` only after an experiment justifies it.
+9. **Append-only evidence.** Never mutate a recorded observation,
+   manifest, or artifact in place. New analysis creates new records
+   pointing back at sources.
+10. **Validate before claiming.** New records need schema versions and
+    round-trip tests. New runs need manifests. New claims need frozen
+    artifacts that pass `validate_artifact`.
+
+## Before implementing any mechanism
+
+Check, in order: the book chapter that earns it, the frozen experiment
+spec under `experiments/`, and the stage report in `docs/`. If any link
+in that chain is missing, write the spec first.
