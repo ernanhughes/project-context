@@ -212,6 +212,7 @@ def build_reader_request(
         temperature=temperature,
         seed=seed,
         max_tokens=max_tokens,
+        actions=tuple(task["actions"]),
     )
 
 
@@ -519,6 +520,7 @@ def run_suite(
             ("reader_model", str(adapter.describe().get("model", "?"))),
             ("temperature", str(temperature)),
             ("decoding_seed", str(seed)),
+            ("response_constraint", "json-schema-enum"),
             ("vcs_dirty", str(vcs_dirty)),
             ("reader_calls", "live-model"),
         ),

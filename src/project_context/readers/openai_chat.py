@@ -89,6 +89,26 @@ class OpenAIChatAdapter:
         return headers
 
     def invoke(self, request: ReaderRequest) -> ReaderResponse:
+        if request.actions:
+            response_format: dict[str, Any] = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "action",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "action": {"type": "string", "enum": list(request.actions)},
+                            "target": {"type": ["string", "null"]},
+                            "value": {"type": ["string", "null"]},
+                            "reason_code": {"type": ["string", "null"]},
+                        },
+                        "required": ["action", "target", "value", "reason_code"],
+                        "additionalProperties": False,
+                    },
+                },
+            }
+        else:
+            response_format = {"type": "json_object"}
         body = json.dumps(
             {
                 "model": self._config.model,
@@ -99,7 +119,7 @@ class OpenAIChatAdapter:
                 "temperature": request.temperature,
                 "seed": request.seed,
                 "max_tokens": request.max_tokens,
-                "response_format": {"type": "json_object"},
+                "response_format": response_format,
             },
             sort_keys=True,
         ).encode("utf-8")

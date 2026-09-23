@@ -353,7 +353,10 @@ def test_openai_adapter_units():
         assert headers["Authorization"] == "Bearer sekrit"
         payload = json.loads(body.decode("utf-8"))
         assert payload["temperature"] == 0.0
-        assert payload["response_format"] == {"type": "json_object"}
+        assert payload["response_format"]["type"] == "json_schema"
+        assert payload["response_format"]["json_schema"]["schema"]["properties"]["action"][
+            "enum"
+        ] == ["HOLD", "RELEASE"]
         return 200, json.dumps(
             {
                 "model": "m",
@@ -375,6 +378,7 @@ def test_openai_adapter_units():
         temperature=0.0,
         seed=1,
         max_tokens=64,
+        actions=("HOLD", "RELEASE"),
     )
     response = adapter.invoke(request)
     assert json.loads(response.raw_text)["action"] == "HOLD"
@@ -398,6 +402,43 @@ def test_openai_adapter_units():
     response = bare.invoke(request)
     assert response.input_tokens.value is None
     assert response.reasoning_tokens is None or response.reasoning_tokens.value is None
+
+
+def test_adapter_sends_json_schema_for_actions():
+    from project_context.readers.openai_chat import OpenAIChatAdapter, OpenAIChatConfig
+
+    seen: dict = {}
+
+    def transport(method, url, headers, body):
+        seen.update(json.loads(body.decode("utf-8")))
+        return 200, json.dumps(
+            {
+                "model": "m",
+                "choices": [{"message": {"content": '{"action": "X"}'}}],
+                "usage": {},
+            }
+        ).encode()
+
+    adapter = OpenAIChatAdapter(
+        OpenAIChatConfig(base_url="http://x", model="m"), transport=transport
+    )
+    request = ReaderRequest(
+        case_id="c",
+        system_text="s",
+        task_text="t",
+        context_text="c",
+        schema_text="{}",
+        temperature=0.0,
+        seed=1,
+        max_tokens=64,
+        actions=("X", "Y"),
+    )
+    adapter.invoke(request)
+    assert seen["response_format"]["type"] == "json_schema"
+    assert seen["response_format"]["json_schema"]["schema"]["properties"]["action"]["enum"] == [
+        "X",
+        "Y",
+    ]
 
     def transport_500(method, url, headers, body):
         return 500, b"oops"

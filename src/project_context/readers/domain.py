@@ -25,6 +25,7 @@ class ReaderRequest:
     temperature: float
     seed: int
     max_tokens: int
+    actions: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -37,6 +38,7 @@ class ReaderRequest:
             "temperature": self.temperature,
             "seed": self.seed,
             "max_tokens": self.max_tokens,
+            "actions": list(self.actions),
         }
 
     @classmethod
@@ -53,6 +55,7 @@ class ReaderRequest:
             temperature=float(data["temperature"]),
             seed=int(data["seed"]),
             max_tokens=int(data["max_tokens"]),
+            actions=tuple(data.get("actions", ())),
         )
 
 
