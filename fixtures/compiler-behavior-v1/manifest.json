@@ -57,15 +57,18 @@
     "primary": {
       "adapter": "openai-chat",
       "endpoint": "local Ollama, OpenAI-compatible /v1/chat/completions",
-      "model": "qwen3.5:latest",
-      "selection_rule": "locally-served instruct model, mid-size for speed; reasoning, cloud-routed, and embedding models excluded"
+      "model": "mistral-small:latest",
+      "selection_rule": "locally-served instruct model with output delivered in message content (no thinking-trap); mid-size for speed; reasoning, cloud-routed, and embedding models excluded"
     },
     "transfer": {
       "adapter": "openai-chat",
       "endpoint": "local Ollama, OpenAI-compatible /v1/chat/completions",
-      "model": "mistral-small:latest",
-      "selection_rule": "second locally-served instruct model, larger size and different family for capability distance"
+      "model": "llama3.1:8b",
+      "selection_rule": "second locally-served instruct model, smaller size and different family for capability distance; same content-delivery requirement"
     }
+  },
+  "rejected_readers": {
+    "qwen3.5:latest": "reader-contract failure under section 80: repeated responses carry empty message content with output consumed by a separate reasoning channel, despite think:false and JSON mode. Retired before any experimental call; outputs never used."
   },
   "decoding": {"temperature": 0, "seed": 20260923, "max_tokens": 512},
   "prompt_version": "behavior-prompt-v1",

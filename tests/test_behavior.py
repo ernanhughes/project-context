@@ -72,8 +72,8 @@ def test_manifest_records_preregistration():
     assert manifest["behavior_version"] == "1"
     assert manifest["primary_budget"] == "tight"
     assert manifest["schedule_seed"] == 20260923
-    assert manifest["readers"]["primary"]["model"] == "qwen3.5:latest"
-    assert manifest["readers"]["transfer"]["model"] == "mistral-small:latest"
+    assert manifest["readers"]["primary"]["model"] == "mistral-small:latest"
+    assert manifest["readers"]["transfer"]["model"] == "llama3.1:8b"
     assert manifest["max_calls"] == 80
     assert set(manifest["eligible_fixtures"]) == {
         "qualification-trap",

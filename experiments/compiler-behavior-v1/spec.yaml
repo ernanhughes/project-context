@@ -41,7 +41,9 @@ falsification:
 seed_strategy: schedule seed 20260923; decoding seed 20260923; diagnostic
   repeats x3 on 4 pre-registered cases (no blind matrix multiplication)
 provider_model: local Ollama via OpenAI-compatible endpoint; primary
-  qwen3.5:latest, transfer mistral-small:latest; selection by operational
-  rule, frozen before outcomes
+  mistral-small:latest, transfer llama3.1:8b; selection by operational
+  rule (local instruct models with content delivery; qwen3.5 retired for
+  empty-content contract failure before any experimental call); frozen
+  before outcomes
 cost_ceiling: 80-model-call guard (--max-calls 80); zero monetary spend
   (local inference); canary 1 trivial non-experimental call only
