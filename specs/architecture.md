@@ -51,3 +51,30 @@ PruneDecision, CompactionArtifact, FidelityRepresentation records;
 `prune()`, `compact()`, `decay()`, `retrieve()`, `assemble()` behaviour;
 real provider adapters; OpenCode capture adapter; Context Compiler.
 See `docs/stage-0-report.md` for the deferred list.
+
+## Stage 1 — read-only OpenCode capture (V1, pinned 1.18.27)
+
+OpenCode V1 exposes no unified pre-dispatch hook, so the adapter
+observes four read-only signals, each becoming one bridge record
+(`project_context.opencode_capture.v1`) in a local JSONL spool:
+
+```text
+OpenCode 1.18.27 (V1 API)
+  experimental.chat.system.transform → system snapshot (session-linked)
+  experimental.chat.messages.transform → message-list snapshot (unlinked)
+  chat.message → admission inventory (session-linked)
+  tool.execute.after → tool result, call-linked (input args excluded)
+        ↓ local spool (.local/... or $PROJECT_CONTEXT_SPOOL_DIR)
+  Python ingester (no mutation of raw files)
+        ↓
+  ContextBundle (provenance: source_type opencode_capture) + ModelInvocation
+        ↓ (usage telemetry unavailable at this boundary: all None)
+  prevalence analysis (aggregates only; export gated)
+```
+
+Boundary, stated once: this is **OpenCode V1 pre-dispatch partial
+context**, not the assembled provider request. Provider lowering happens
+after these hooks; later-registered plugins may mutate after capture
+(load the adapter last); per-tool definitions, generation settings, and
+compaction observation are deferred. A future V2 adapter reuses the
+bridge schema with full system/messages/tools/options blocks.

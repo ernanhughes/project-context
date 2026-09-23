@@ -1,0 +1,341 @@
+{
+  "schema": "project_context.opencode_capture.v1.golden",
+  "evidence_class": "synthetic",
+  "note": "SYNTHETIC \u2014 NOT BOOK RESULT. Shared by the TypeScript adapter tests (inputs to expected records) and the Python ingester tests (expected records to bundles). Content is ASCII-only so the TypeScript and Python canonical hashes agree byte-for-byte; integrity hashes are producer-local and must not be compared across implementations on non-ASCII content.",
+  "inputs": [
+    {
+      "hook_kind": "system.transform",
+      "session_id": "ses-gold-1",
+      "agent": null,
+      "model": {
+        "provider_id": "test-provider",
+        "id": "test-model",
+        "variant": null
+      },
+      "sequence_scope": "ses-gold-1",
+      "sequence_index": 1,
+      "payload": {
+        "system": [
+          "You are a test assistant.",
+          "Follow project rules."
+        ]
+      },
+      "captured_at": "2026-09-23T00:00:01Z",
+      "capture_id": "cap-gold-001"
+    },
+    {
+      "hook_kind": "messages.transform",
+      "session_id": null,
+      "agent": null,
+      "model": null,
+      "sequence_scope": "unlinked",
+      "sequence_index": 1,
+      "payload": {
+        "messages": [
+          {
+            "info": {
+              "id": "msg-1",
+              "sessionID": "ses-gold-1",
+              "role": "user"
+            },
+            "parts": [
+              {
+                "id": "part-1",
+                "sessionID": "ses-gold-1",
+                "messageID": "msg-1",
+                "type": "text",
+                "text": "Fix the test."
+              }
+            ]
+          },
+          {
+            "info": {
+              "id": "msg-2",
+              "sessionID": "ses-gold-1",
+              "role": "assistant"
+            },
+            "parts": [
+              {
+                "id": "part-2",
+                "sessionID": "ses-gold-1",
+                "messageID": "msg-2",
+                "type": "tool",
+                "callID": "call-7",
+                "tool": "read",
+                "state": {
+                  "status": "completed",
+                  "output": "file contents here",
+                  "title": "read src/app.ts"
+                }
+              },
+              {
+                "id": "part-3",
+                "sessionID": "ses-gold-1",
+                "messageID": "msg-2",
+                "type": "weird-future-part",
+                "blob": [
+                  3,
+                  1,
+                  2
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "captured_at": "2026-09-23T00:00:02Z",
+      "capture_id": "cap-gold-002"
+    },
+    {
+      "hook_kind": "chat.message",
+      "session_id": "ses-gold-1",
+      "agent": "build",
+      "model": {
+        "provider_id": "test-provider",
+        "id": "test-model",
+        "variant": null
+      },
+      "sequence_scope": "ses-gold-1",
+      "sequence_index": 2,
+      "payload": {
+        "admission": {
+          "message": {
+            "id": "msg-0",
+            "sessionID": "ses-gold-1",
+            "role": "user"
+          },
+          "parts": [
+            {
+              "id": "part-0",
+              "sessionID": "ses-gold-1",
+              "messageID": "msg-0",
+              "type": "text",
+              "text": "Please review this change."
+            }
+          ]
+        }
+      },
+      "captured_at": "2026-09-23T00:00:03Z",
+      "capture_id": "cap-gold-003"
+    },
+    {
+      "hook_kind": "tool.execute.after",
+      "session_id": "ses-gold-1",
+      "agent": null,
+      "model": null,
+      "sequence_scope": "ses-gold-1",
+      "sequence_index": 3,
+      "payload": {
+        "tool_result": {
+          "tool": "bash",
+          "callID": "call-9",
+          "title": "npm test",
+          "output": "3 passed",
+          "metadata": {
+            "exit": 0
+          }
+        }
+      },
+      "captured_at": "2026-09-23T00:00:04Z",
+      "capture_id": "cap-gold-004"
+    }
+  ],
+  "records": [
+    {
+      "schema": "project_context.opencode_capture.v1",
+      "capture_id": "cap-gold-001",
+      "captured_at": "2026-09-23T00:00:01Z",
+      "capture_stage": "opencode.v1.pre_dispatch_partial",
+      "hook_kind": "system.transform",
+      "session_id": "ses-gold-1",
+      "agent": null,
+      "model": {
+        "provider_id": "test-provider",
+        "id": "test-model",
+        "variant": null
+      },
+      "sequence_scope": "ses-gold-1",
+      "sequence_index": 1,
+      "adapter_version": "0.1.0",
+      "opencode_version": "1.18.27",
+      "plugin_api_version": "@opencode-ai/plugin 1.18.27",
+      "observer_position": "last-registered",
+      "payload": {
+        "system": [
+          "You are a test assistant.",
+          "Follow project rules."
+        ]
+      },
+      "integrity": {
+        "sha256": "4b7d214cdd78f2ba55e2507c7d94806ed5216b8a59f0c96f6b32a2d9297981a0"
+      },
+      "timings_ms": {
+        "serialize": 0,
+        "write": 0,
+        "total": 0
+      },
+      "evidence_class": "opencode_capture"
+    },
+    {
+      "schema": "project_context.opencode_capture.v1",
+      "capture_id": "cap-gold-002",
+      "captured_at": "2026-09-23T00:00:02Z",
+      "capture_stage": "opencode.v1.pre_dispatch_partial",
+      "hook_kind": "messages.transform",
+      "session_id": null,
+      "agent": null,
+      "model": null,
+      "sequence_scope": "unlinked",
+      "sequence_index": 1,
+      "adapter_version": "0.1.0",
+      "opencode_version": "1.18.27",
+      "plugin_api_version": "@opencode-ai/plugin 1.18.27",
+      "observer_position": "last-registered",
+      "payload": {
+        "messages": [
+          {
+            "info": {
+              "id": "msg-1",
+              "sessionID": "ses-gold-1",
+              "role": "user"
+            },
+            "parts": [
+              {
+                "id": "part-1",
+                "sessionID": "ses-gold-1",
+                "messageID": "msg-1",
+                "type": "text",
+                "text": "Fix the test."
+              }
+            ]
+          },
+          {
+            "info": {
+              "id": "msg-2",
+              "sessionID": "ses-gold-1",
+              "role": "assistant"
+            },
+            "parts": [
+              {
+                "id": "part-2",
+                "sessionID": "ses-gold-1",
+                "messageID": "msg-2",
+                "type": "tool",
+                "callID": "call-7",
+                "tool": "read",
+                "state": {
+                  "status": "completed",
+                  "output": "file contents here",
+                  "title": "read src/app.ts"
+                }
+              },
+              {
+                "id": "part-3",
+                "sessionID": "ses-gold-1",
+                "messageID": "msg-2",
+                "type": "weird-future-part",
+                "blob": [
+                  3,
+                  1,
+                  2
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "integrity": {
+        "sha256": "c3d61007595b9474cb6903b5973910b6aa01e42bfc846c4ff8e5de7d2ca7d093"
+      },
+      "timings_ms": {
+        "serialize": 0,
+        "write": 0,
+        "total": 0
+      },
+      "evidence_class": "opencode_capture"
+    },
+    {
+      "schema": "project_context.opencode_capture.v1",
+      "capture_id": "cap-gold-003",
+      "captured_at": "2026-09-23T00:00:03Z",
+      "capture_stage": "opencode.v1.pre_dispatch_partial",
+      "hook_kind": "chat.message",
+      "session_id": "ses-gold-1",
+      "agent": "build",
+      "model": {
+        "provider_id": "test-provider",
+        "id": "test-model",
+        "variant": null
+      },
+      "sequence_scope": "ses-gold-1",
+      "sequence_index": 2,
+      "adapter_version": "0.1.0",
+      "opencode_version": "1.18.27",
+      "plugin_api_version": "@opencode-ai/plugin 1.18.27",
+      "observer_position": "last-registered",
+      "payload": {
+        "admission": {
+          "message": {
+            "id": "msg-0",
+            "sessionID": "ses-gold-1",
+            "role": "user"
+          },
+          "parts": [
+            {
+              "id": "part-0",
+              "sessionID": "ses-gold-1",
+              "messageID": "msg-0",
+              "type": "text",
+              "text": "Please review this change."
+            }
+          ]
+        }
+      },
+      "integrity": {
+        "sha256": "9586159e9230537af7f9bb34def98601570d96111a936b339943e97d850846cc"
+      },
+      "timings_ms": {
+        "serialize": 0,
+        "write": 0,
+        "total": 0
+      },
+      "evidence_class": "opencode_capture"
+    },
+    {
+      "schema": "project_context.opencode_capture.v1",
+      "capture_id": "cap-gold-004",
+      "captured_at": "2026-09-23T00:00:04Z",
+      "capture_stage": "opencode.v1.pre_dispatch_partial",
+      "hook_kind": "tool.execute.after",
+      "session_id": "ses-gold-1",
+      "agent": null,
+      "model": null,
+      "sequence_scope": "ses-gold-1",
+      "sequence_index": 3,
+      "adapter_version": "0.1.0",
+      "opencode_version": "1.18.27",
+      "plugin_api_version": "@opencode-ai/plugin 1.18.27",
+      "observer_position": "last-registered",
+      "payload": {
+        "tool_result": {
+          "tool": "bash",
+          "callID": "call-9",
+          "title": "npm test",
+          "output": "3 passed",
+          "metadata": {
+            "exit": 0
+          }
+        }
+      },
+      "integrity": {
+        "sha256": "98d35430b111cd9e7bdfd870343fe548fc153d0b94ddbecc8a1cc58263ce7380"
+      },
+      "timings_ms": {
+        "serialize": 0,
+        "write": 0,
+        "total": 0
+      },
+      "evidence_class": "opencode_capture"
+    }
+  ]
+}

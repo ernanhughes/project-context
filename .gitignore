@@ -223,3 +223,6 @@ raw-corpus/
 private-runs/
 runs/*/
 !runs/README.md
+
+# Stage 1: TypeScript adapter dependencies (pinned, reinstallable).
+integrations/opencode/node_modules/

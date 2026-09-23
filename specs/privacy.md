@@ -37,3 +37,16 @@ unpublishable: approval is a human decision, not a script output.
 
 Never derive stable IDs from secret or private content. Fixture IDs are
 authored constants; live capture IDs are random UUIDs.
+
+## OpenCode capture (Stage 1)
+
+Local raw captures may contain source code, conversation text, tool
+output, system and project instructions, and any secret the model was
+genuinely shown. Therefore raw captures are private, git-ignored, never
+uploaded, never automatically sanitised, and never printed casually
+(`inspect` defaults to structural output; raw printing requires an
+explicit local flag). Bundle ids (`opencode-<capture-uuid>`) and
+filenames (UUIDs, never prompt/project/secret-derived) carry no content.
+Content fingerprints are local-only and never exported; export relabels
+session keys to ordinals and the gate refuses content, identifier, hash,
+and secret markers.

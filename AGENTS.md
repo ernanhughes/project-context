@@ -43,6 +43,30 @@ owns executable evidence. Never confuse the two.
     round-trip tests. New runs need manifests. New claims need frozen
     artifacts that pass `validate_artifact`.
 
+## Stage 1 capture rules
+
+11. **Capture is opt-in and off by default.** Never enable raw recording
+    by merely installing the adapter; never manage the user's OpenCode
+    processes to test capture.
+12. **Never mutate OpenCode context.** Copy and serialise only. The
+    no-mutation invariant is test-pinned, not just reviewed.
+13. **Call it pre-dispatch partial context**, never the provider wire
+    request. V1 has no unified assembled-context hook; record the
+    limitation instead of inferring it away.
+14. **Never infer hidden origins from text.** Vendor, product, and
+    project attribution require hook metadata, not prose heuristics.
+    Unattributable fields stay null.
+15. **Unavailable stays unavailable.** No zeros for missing telemetry,
+    no estimates labelled observed, no past-computation token fields
+    transferred into current invocations.
+16. **Raw captures stay local and unprinted.** Structural output by
+    default; no commits, no casual stdout, no uploads.
+17. **Observations are not interventions.** Nothing in the adapter may
+    transform, prune, compact, or rewrite; the adapter package must keep
+    zero runtime dependencies.
+18. **Pin API versions.** Adapter records OpenCode plus plugin-package
+    versions per capture; never depend on `latest`.
+
 ## Before implementing any mechanism
 
 Check, in order: the book chapter that earns it, the frozen experiment

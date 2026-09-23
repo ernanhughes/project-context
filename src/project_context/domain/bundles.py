@@ -11,6 +11,7 @@ from typing import Any
 
 from project_context.domain.items import SCHEMA_VERSION as ITEM_SCHEMA
 from project_context.domain.items import ContextItem
+from project_context.domain.provenance import CaptureProvenance
 
 SCHEMA_VERSION = "project_context.context_bundle.v1"
 
@@ -22,6 +23,7 @@ class ContextBundle:
     created_at: str
     layout_trace: tuple[str, ...]
     evidence_class: str = "synthetic"
+    provenance: CaptureProvenance | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -31,6 +33,7 @@ class ContextBundle:
             "created_at": self.created_at,
             "layout_trace": list(self.layout_trace),
             "evidence_class": self.evidence_class,
+            "provenance": self.provenance.to_dict() if self.provenance else None,
         }
 
     @classmethod
@@ -45,6 +48,7 @@ class ContextBundle:
             created_at=data["created_at"],
             layout_trace=tuple(data["layout_trace"]),
             evidence_class=data.get("evidence_class", "synthetic"),
+            provenance=CaptureProvenance.from_dict(data.get("provenance")),
         )
         bundle._check_layout()
         return bundle
@@ -75,6 +79,7 @@ def build_bundle(
     bundle_id: str | None = None,
     created_at: str,
     evidence_class: str = "synthetic",
+    provenance: CaptureProvenance | None = None,
 ) -> ContextBundle:
     """Assign positions 0..n in given order and freeze. Live captures pass
     bundle_id=None to get a UUID; deterministic fixtures pass stable ids."""
@@ -91,6 +96,7 @@ def build_bundle(
             scope=item.scope,
             observed_at=item.observed_at,
             semantic_id=item.semantic_id,
+            ref=item.ref,
         )
         for index, item in enumerate(items)
     )
@@ -100,6 +106,7 @@ def build_bundle(
         created_at=created_at,
         layout_trace=tuple(item.id for item in ordered),
         evidence_class=evidence_class,
+        provenance=provenance,
     )
     bundle._check_layout()
     return bundle

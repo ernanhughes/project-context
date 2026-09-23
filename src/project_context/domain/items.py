@@ -32,6 +32,7 @@ class ContextItem:
     scope: str | None = None
     observed_at: str | None = None
     semantic_id: str | None = None
+    ref: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -47,6 +48,7 @@ class ContextItem:
             "scope": self.scope,
             "observed_at": self.observed_at,
             "semantic_id": self.semantic_id,
+            "ref": self.ref,
         }
 
     @classmethod
@@ -66,6 +68,7 @@ class ContextItem:
             scope=data.get("scope"),
             observed_at=data.get("observed_at"),
             semantic_id=data.get("semantic_id"),
+            ref=data.get("ref"),
         )
 
 
