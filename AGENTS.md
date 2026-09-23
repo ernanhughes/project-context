@@ -81,6 +81,36 @@ analysis reads files. A source scan test pins this invariant.
     runs are PROJECT RESULTs about fixture mechanics, never claims about
     real OpenCode contexts or model behaviour.
 
+## Stage 4 behavioural invariants
+
+28. **Never mutate run-001.** Behavioural conditions re-render frozen
+    traces and digest-verify them; failures stop the condition.
+29. **Never leak evaluator truth to the reader.** Task files, prompts,
+    and payloads carry no hidden labels, minima, or expected actions;
+    tests scan for them.
+30. **Never tune tasks, graders, budgets, or interventions after model
+    output.** Fake reader for development; first genuine call freezes
+    the experiment (preregistration commit).
+31. **Never silently recompile a frozen condition.** Derived bundles get
+    new identities with parent/intervention linkage; MR restores
+    byte-identically.
+32. **Every model call is isolated.** No conversation reuse, no shared
+    sessions, no cross-condition state; case IDs encode
+    fixture/budget/condition/reader/repeat.
+33. **No LLM judge for primary task score.** Deterministic parser plus
+    deterministic grader; malformed output is observed, never repaired.
+34. **Provider errors are not task failures.** Retry transport errors
+    with bounded backoff; record attempts; never substitute models.
+35. **None telemetry is not zero.** Unavailable usage, cost, and cache
+    fields stay unavailable with provenance intact.
+36. **No real side effects.** Inert synthetic fixtures, deterministic
+    simulator grading, dummy sinks only.
+37. **Policy changes require new versions plus full replay.** Behavioural
+    outcomes never edit compiler policy in place.
+38. **Behavioural results do not imply ecological prevalence.** Real
+    reader behaviour on synthetic tasks is the entire claim until real
+    traces exist.
+
 ## Stage 1 capture rules
 
 11. **Capture is opt-in and off by default.** Never enable raw recording

@@ -1,0 +1,10 @@
+{
+  "task_id": "qualification-release",
+  "family": "hold_release",
+  "prompt": "Decide the release action for the migration described in your project context. The context may be incomplete; act on what it supports. Target: migration.",
+  "actions": ["HOLD", "RELEASE", "ABSTAIN"],
+  "reason_options": ["tenant-pending", "clear", "unknown"],
+  "grader_version": "hold-release-v1",
+  "source_compiler_fixture": "qualification-trap",
+  "calibration_only": false
+}

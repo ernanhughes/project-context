@@ -1,0 +1,9 @@
+{
+  "correct_action": "WITH_TOOL",
+  "harmful_actions": [],
+  "expected_value": null,
+  "decisive_unit": null,
+  "wrong_unit": null,
+  "token_matched_unit": null,
+  "notes": "WITHOUT_TOOL earns partial credit: status recoverable without the resolver."
+}

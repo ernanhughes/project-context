@@ -1,0 +1,11 @@
+{
+  "task_id": "echo-identifier",
+  "family": "echo",
+  "prompt": "The migration identifier for this task is mig-7Q2. Output it exactly.",
+  "actions": ["ECHO", "ABSTAIN"],
+  "reason_options": ["stated-in-task", "unknown"],
+  "grader_version": "echo-v1",
+  "source_compiler_fixture": "heterogeneous-basic",
+  "borrowed_bundles": {"fixture": "heterogeneous-basic", "budget": "tight"},
+  "calibration_only": true
+}

@@ -1,0 +1,47 @@
+# Frozen experiment contract: compiler-behavior-v1. See specs/experiment-contract.md.
+question: >-
+  Holding task, reader, prompt, decoding and grading fixed, does changing
+  only the supplied frozen ContextBundle change observable behaviour, and
+  does that change improve the task outcome enough to justify its cost?
+hypotheses: [H1-staged-beats-gated-where-violations-bite,
+  H2-remove-degrades-restore-recovers, H3-token-match-underperforms-restore,
+  H4-wrong-context-moves-behaviour, H5-harmful-labels-act-or-not,
+  H6-oracle-minimum-insufficient-for-reader]
+population: fixtures/compiler-behavior-v1 manifest v1 (5 compiler-derived
+  tasks + 1 calibration task), primary budget tight, transfer subset
+  heterogeneous-basic@medium
+independent_variable: supplied ContextBundle (B0-BO ladder + M/MA/MR/MT/MW)
+controlled_variables:
+  - task prompt per fixture (frozen)
+  - reader wrapper prompt behavior-prompt-v1
+  - decoding: temperature 0, fixed seed, max_tokens 512
+  - parser action-parser-v1, per-family graders v1
+  - bundle bytes digest-verified against compiler-v1/run-001
+  - isolated session per case, seeded interleaved schedule
+conditions: [B0, B1, B2, B3, B4, B5, BO, MA, MR, MT, MW]
+measurements:
+  - task_score, parse_success, harmful_action
+  - family dimension (qualification/currency/scope/grounding/adherence/exactness)
+  - influence (action_changed), utility direction
+  - bundle tokens, provider input/output tokens, latency, cost-if-priced
+  - cache telemetry where exposed
+success_criteria:
+  - every case isolated with digest-verified bundles
+  - graders/parser frozen before inference
+  - matched denominators reported, no composite score
+failure_criteria:
+  - truth leakage into any reader payload
+  - bundle bytes differing from run-001 without renaming
+  - rescoring after outputs, task tuning after outputs
+falsification:
+  - B5 matches B0/B4, top-k parity, oracle parity, harmful extra context
+  - inert distractors or harmful labels, null remove/restore
+  - token-matched restoration, cross-reader reversal
+  - bundle metrics unpredictive of utility
+seed_strategy: schedule seed 20260923; decoding seed 20260923; diagnostic
+  repeats x3 on 4 pre-registered cases (no blind matrix multiplication)
+provider_model: local Ollama via OpenAI-compatible endpoint; primary
+  qwen3.5:latest, transfer mistral-small:latest; selection by operational
+  rule, frozen before outcomes
+cost_ceiling: 80-model-call guard (--max-calls 80); zero monetary spend
+  (local inference); canary 1 trivial non-experimental call only

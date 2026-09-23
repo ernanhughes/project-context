@@ -239,6 +239,76 @@ def build_parser() -> argparse.ArgumentParser:
         "validate-run", help="Validate a frozen compiler run directory."
     )
     comp_validate.add_argument("run_dir", help="Run directory to validate.")
+
+    behavior = sub.add_parser("behavior", help="Matched behavioural evaluation.")
+    behavior_sub = behavior.add_subparsers(dest="behavior_command", required=True)
+    behavior_sub.add_parser("fixtures", help="List behavior fixtures and budgets.")
+    beh_inspect = behavior_sub.add_parser(
+        "inspect", help="Show one case setup without calling a model."
+    )
+    beh_inspect.add_argument("fixture", help="Behavior fixture name.")
+    beh_inspect.add_argument(
+        "--condition",
+        default="B5",
+        choices=(
+            "B0",
+            "B1",
+            "B2",
+            "B3",
+            "B4",
+            "B5",
+            "BO",
+            "MA",
+            "MR",
+            "MT",
+            "MW",
+        ),
+        help="Condition to inspect.",
+    )
+    beh_inspect.add_argument(
+        "--format", choices=("text", "json"), default="text", help="Report format."
+    )
+    behavior_sub.add_parser("plan", help="Print the frozen case schedule.")
+    beh_dry = behavior_sub.add_parser("dry-run", help="Validate everything without network access.")
+    beh_dry.add_argument(
+        "--reader",
+        default="fake",
+        choices=("fake", "primary", "transfer"),
+        help="Reader to resolve (no calls are made).",
+    )
+    beh_run = behavior_sub.add_parser("run", help="Run the behavior suite.")
+    beh_run.add_argument("experiment", choices=("compiler-behavior-v1",), help="Experiment to run.")
+    beh_run.add_argument(
+        "--reader",
+        default="fake",
+        choices=("fake", "primary", "transfer"),
+        help="Reader adapter to use.",
+    )
+    beh_run.add_argument("--run-id", default=None, help="Run identifier.")
+    beh_run.add_argument("--runs-dir", default=".local/runs", help="Local root for frozen runs.")
+    beh_run.add_argument("--max-calls", type=int, required=True, help="Hard cap on model calls.")
+    beh_run.add_argument(
+        "--timestamp", default=None, help="Manifest timestamp (default: now, UTC)."
+    )
+    beh_run.add_argument("--resume", action="store_true", help="Resume an interrupted run.")
+    beh_run.add_argument(
+        "--transfer",
+        action="store_true",
+        help="Run the pre-registered transfer wave instead of the primary schedule.",
+    )
+    beh_validate = behavior_sub.add_parser(
+        "validate-run", help="Validate a frozen behavior run directory."
+    )
+    beh_validate.add_argument("run_dir", help="Run directory to validate.")
+    beh_canary = behavior_sub.add_parser(
+        "canary", help="Connectivity canary (not experiment data)."
+    )
+    beh_canary.add_argument(
+        "--reader",
+        default="primary",
+        choices=("primary", "transfer"),
+        help="Live reader to probe.",
+    )
     return parser
 
 
@@ -456,6 +526,317 @@ def cmd_compiler_validate_run(run_dir: str) -> int:
             print(f"INVALID: {error}", file=sys.stderr)
         return 3
     print(f"run valid: {run_dir}")
+    return 0
+
+
+BEHAVIOR_ROOT = Path("fixtures") / "compiler-behavior-v1"
+BEHAVIOR_EXPERIMENT_ROOT = Path("experiments") / "compiler-behavior-v1"
+BEHAVIOR_CONDITIONS = (
+    "B0",
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B5",
+    "BO",
+    "MA",
+    "MR",
+    "MT",
+    "MW",
+)
+
+
+def _behavior_manifest() -> dict[str, Any]:
+    from project_context.behavior.fixtures import load_manifest
+
+    return load_manifest(BEHAVIOR_ROOT / "manifest.json")
+
+
+def _resolve_reader(name: str):
+    """Resolve a reader adapter by name. Live adapters read endpoint and
+    model from environment/spec; values are never printed."""
+    import os
+
+    if name == "fake":
+        from project_context.readers.fake import FakeReader
+
+        return FakeReader()
+    if name in ("primary", "transfer"):
+        from project_context.readers.openai_chat import OpenAIChatAdapter, OpenAIChatConfig
+
+        manifest = _behavior_manifest()
+        model = manifest["readers"][name]["model"]
+        base_url = os.environ.get("CONTEXTLAB_READER_BASE_URL", "http://localhost:11434")
+        return OpenAIChatAdapter(
+            OpenAIChatConfig(
+                base_url=base_url,
+                model=model,
+                api_key=os.environ.get("CONTEXTLAB_READER_API_KEY"),
+            )
+        )
+    raise ValueError(f"unknown reader: {name}")
+
+
+def _reader_display(name: str) -> str:
+    if name == "fake":
+        return "fake (offline scripted reader)"
+    manifest = _behavior_manifest()
+    return f"{name} model={manifest['readers'][name]['model']} (endpoint hidden)"
+
+
+def cmd_behavior_fixtures() -> int:
+    from project_context.behavior.fixtures import load_behavior_set
+
+    manifest = _behavior_manifest()
+    print(f"behavior set: compiler-behavior-v1 v{manifest['behavior_version']} [SYNTHETIC]")
+    print(f"primary budget: {manifest['primary_budget']}")
+    for name in sorted(load_behavior_set(BEHAVIOR_ROOT)):
+        print(f"  {name}")
+    return 0
+
+
+def cmd_behavior_inspect(fixture: str, condition: str, output_format: str) -> int:
+    from project_context.behavior.bundles import render_visible
+    from project_context.behavior.fixtures import load_behavior_set, load_task
+
+    behavior_set = load_behavior_set(BEHAVIOR_ROOT)
+    if fixture not in behavior_set:
+        print(f"unknown fixture: {fixture}", file=sys.stderr)
+        return 2
+    task = load_task(behavior_set[fixture]["task"])
+    manifest = _behavior_manifest()
+    info = {
+        "fixture": fixture,
+        "condition": condition,
+        "family": task["family"],
+        "actions": task["actions"],
+        "primary_budget": manifest["primary_budget"],
+        "task_prompt_chars": len(task["prompt"]),
+    }
+    if output_format == "json":
+        print(json.dumps(info, indent=2, sort_keys=True))
+        return 0
+    print(f"[SYNTHETIC] {fixture} / {condition} (family {task['family']})")
+    print(f"prompt: {task['prompt']}")
+    print(f"actions: {', '.join(task['actions'])}")
+    _ = render_visible
+    return 0
+
+
+def cmd_behavior_plan() -> int:
+    from project_context.behavior.runner import build_schedule, transfer_schedule
+
+    manifest = _behavior_manifest()
+    schedule = build_schedule(manifest, manifest["schedule_seed"], reader="primary")
+    transfer = transfer_schedule(manifest, reader="transfer")
+    print(f"primary schedule: {len(schedule)} cases (seed {manifest['schedule_seed']})")
+    for case in schedule:
+        print(f"  {case['sequence']:3d} {case['case_id']}")
+    print(f"transfer wave: {len(transfer)} cases")
+    for case in transfer:
+        print(f"  t{case['sequence']:02d} {case['case_id']}")
+    print(f"total live calls planned: {len(schedule) + len(transfer)} + 1 canary")
+    return 0
+
+
+def cmd_behavior_dry_run(reader: str) -> int:
+    from project_context.behavior.fixtures import load_behavior_set, load_task
+    from project_context.behavior.runner import (
+        BundleSource,
+        build_derived,
+        build_schedule,
+        transfer_schedule,
+    )
+    from project_context.compiler.fixtures import load_candidate_file
+    from project_context.evaluation.compiler_runner import load_fixture_file_set
+
+    manifest = _behavior_manifest()
+    behavior_set = load_behavior_set(BEHAVIOR_ROOT)
+    source = BundleSource(
+        Path(".local/runs/compiler-v1/run-001"),
+        Path("fixtures/compiler-v1"),
+    )
+    problems: list[str] = []
+    # 1. every primary case resolves a digest-verified bundle (or empty B0).
+    schedule = build_schedule(manifest, manifest["schedule_seed"], reader="primary")
+    transfer = transfer_schedule(manifest, reader="transfer")
+    compiler_set = load_fixture_file_set(Path("fixtures/compiler-v1"))
+    for case in schedule + transfer:
+        fixture, budget, condition = case["fixture"], case["budget"], case["condition"]
+        try:
+            task = load_task(behavior_set[fixture]["task"])
+            _ = task
+            if condition == "B0":
+                continue
+            if condition in ("B1", "B2", "B3", "B4", "B5", "BO"):
+                from project_context.behavior.runner import STRATEGY_OF
+
+                borrowed = load_task(behavior_set[fixture]["task"]).get("borrowed_bundles")
+                src_fix = borrowed["fixture"] if borrowed else fixture
+                src_bud = borrowed["budget"] if borrowed else budget
+                source.bundle_for(src_fix, src_bud, STRATEGY_OF[condition])
+            else:
+                from project_context.behavior.fixtures import load_interventions
+
+                borrowed = load_task(behavior_set[fixture]["task"]).get("borrowed_bundles")
+                src_fix = borrowed["fixture"] if borrowed else fixture
+                src_bud = borrowed["budget"] if borrowed else budget
+                staged, _ = source.bundle_for(src_fix, src_bud, "staged")
+                interventions = load_interventions(behavior_set[fixture]["interventions"])
+                build_derived(
+                    staged_bundle=staged,
+                    interventions=interventions,
+                    intervention_id=condition,
+                )
+        except Exception as exc:  # noqa: BLE001 - dry-run reports, never raises
+            problems.append(f"{case['case_id']}: {exc}")
+    # 2. compiler fixtures load (strict keys pin truth separation).
+    _ = load_candidate_file(compiler_set["qualification-trap"]["candidates"])
+    _ = load_fixture_set(Path("fixtures/compiler-v1"))
+    calls = len(schedule) + len(transfer)
+    print(f"cases: primary={len(schedule)} transfer={len(transfer)} total={calls}")
+    print(f"max-calls guard required: >= {calls}")
+    if problems:
+        for problem in problems:
+            print(f"DRY-RUN PROBLEM: {problem}", file=sys.stderr)
+        return 3
+    print(f"dry run clean [{reader} resolved, no calls made]")
+    return 0
+
+
+def cmd_behavior_run(
+    experiment: str,
+    reader: str,
+    run_id: str | None,
+    runs_dir: str,
+    max_calls: int,
+    timestamp: str | None,
+    resume: bool,
+    transfer: bool,
+) -> int:
+    from project_context.behavior.fixtures import load_behavior_set
+    from project_context.behavior.runner import (
+        BundleSource,
+        build_schedule,
+        run_suite,
+        transfer_schedule,
+    )
+    from project_context.runs.artifacts import vcs_info
+
+    _ = experiment
+    manifest = _behavior_manifest()
+    behavior_set = load_behavior_set(BEHAVIOR_ROOT)
+    _ = behavior_set
+    adapter = _resolve_reader(reader)
+    if transfer and reader != "transfer":
+        print("--transfer requires --reader transfer", file=sys.stderr)
+        return 2
+    schedule = (
+        transfer_schedule(manifest, reader)
+        if transfer
+        else build_schedule(manifest, manifest["schedule_seed"], reader=reader)
+    )
+    moment = timestamp or _utcnow()
+    resolved_run_id = run_id or f"behavior-{moment.replace(':', '').replace('+', '')}"
+    source = BundleSource(
+        Path(".local/runs/compiler-v1/run-001"),
+        Path("fixtures/compiler-v1"),
+    )
+    vcs = vcs_info(Path("."))
+    decoding = manifest["decoding"]
+    run_dir = run_suite(
+        behavior_root=BEHAVIOR_ROOT,
+        source=source,
+        adapter=adapter,
+        reader_name=reader,
+        temperature=float(decoding["temperature"]),
+        seed=int(decoding["seed"]),
+        max_tokens=int(decoding["max_tokens"]),
+        schedule=schedule,
+        max_calls=max_calls,
+        run_id=resolved_run_id,
+        timestamp=moment,
+        git_commit=str(vcs.get("commit") or "unknown"),
+        vcs_dirty=bool(vcs.get("dirty")),
+        out_root=Path(runs_dir),
+        resume=resume,
+    )
+    print(f"frozen behavior run at {run_dir} [SYNTHETIC FIXTURES + LIVE READER]")
+    return 0
+
+
+def cmd_behavior_validate_run(run_dir: str) -> int:
+    from project_context.runs.artifacts import validate_artifact
+
+    root = Path(run_dir)
+    errors = validate_artifact(root)
+    for name in ("behavior.jsonl", "invocations.jsonl", "case_schedule.json"):
+        path = root / name
+        if not path.is_file():
+            errors.append(f"missing required behavior file: {name}")
+            continue
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    json.loads(line)
+        except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+            errors.append(f"{name} unreadable: {exc}")
+    if errors:
+        for error in errors:
+            print(f"INVALID: {error}", file=sys.stderr)
+        return 3
+    # Cross-check: every scheduled case has behaviour + invocation records.
+    schedule = json.loads((root / "case_schedule.json").read_text(encoding="utf-8"))
+    behavior_ids = {
+        json.loads(line)["record"]["experiment_case_id"]
+        for line in (root / "behavior.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    }
+    missing = [c["case_id"] for c in schedule if c["case_id"] not in behavior_ids]
+    if missing:
+        print(f"INVALID: {len(missing)} scheduled cases without records", file=sys.stderr)
+        return 3
+    print(f"behavior run valid: {run_dir} ({len(schedule)} cases)")
+    return 0
+
+
+def cmd_behavior_canary(reader: str) -> int:
+    import datetime
+
+    from project_context.readers.domain import ReaderRequest
+
+    adapter = _resolve_reader(reader)
+    request = ReaderRequest(
+        case_id="canary-connectivity",
+        system_text="Reply with exactly the given JSON and nothing else.",
+        task_text='{"ping": true}',
+        context_text="",
+        schema_text='{"ping": boolean}',
+        temperature=0.0,
+        seed=1,
+        max_tokens=64,
+    )
+    try:
+        response = adapter.invoke(request)
+    except Exception as exc:  # noqa: BLE001 - canary reports, never raises
+        print(f"canary FAILED: {type(exc).__name__}", file=sys.stderr)
+        return 3
+    summary = {
+        "note": "CONNECTIVITY CANARY — NOT EXPERIMENT DATA",
+        "adapter": adapter.describe(),
+        "model": response.model,
+        "latency_ms": response.latency_ms,
+        "input_tokens": response.input_tokens.to_dict(),
+        "output_tokens": response.output_tokens.to_dict(),
+        "raw_preview": response.raw_text[:120],
+    }
+    out_dir = Path(".local")
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    (out_dir / f"canary-{reader}-{stamp}.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
 
 
@@ -722,6 +1103,29 @@ def main(argv: list[str] | None = None) -> int:
         )
     if args.command == "compiler" and args.compiler_command == "validate-run":
         return cmd_compiler_validate_run(args.run_dir)
+    if args.command == "behavior" and args.behavior_command == "fixtures":
+        return cmd_behavior_fixtures()
+    if args.command == "behavior" and args.behavior_command == "inspect":
+        return cmd_behavior_inspect(args.fixture, args.condition, args.format)
+    if args.command == "behavior" and args.behavior_command == "plan":
+        return cmd_behavior_plan()
+    if args.command == "behavior" and args.behavior_command == "dry-run":
+        return cmd_behavior_dry_run(args.reader)
+    if args.command == "behavior" and args.behavior_command == "run":
+        return cmd_behavior_run(
+            args.experiment,
+            args.reader,
+            args.run_id,
+            args.runs_dir,
+            args.max_calls,
+            args.timestamp,
+            args.resume,
+            args.transfer,
+        )
+    if args.command == "behavior" and args.behavior_command == "validate-run":
+        return cmd_behavior_validate_run(args.run_dir)
+    if args.command == "behavior" and args.behavior_command == "canary":
+        return cmd_behavior_canary(args.reader)
     return 2
 
 

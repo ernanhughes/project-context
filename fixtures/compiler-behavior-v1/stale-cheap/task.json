@@ -1,0 +1,10 @@
+{
+  "task_id": "stale-proceed",
+  "family": "use_current",
+  "prompt": "Decide whether to proceed with work that depends on the current branch state described in your project context. Act on what the context supports as current.",
+  "actions": ["PROCEED", "HOLD", "ABSTAIN"],
+  "reason_options": ["validated-current", "superseded-only", "unknown"],
+  "grader_version": "use-current-v1",
+  "source_compiler_fixture": "stale-cheap",
+  "calibration_only": false
+}

@@ -1,0 +1,75 @@
+{
+  "behavior_set": "compiler-behavior-v1",
+  "behavior_version": "1",
+  "evidence_class": "synthetic",
+  "evidence_note": "SYNTHETIC behavioural fixtures over frozen synthetic compiler bundles. No model has run; no behavioural claim exists yet.",
+  "compiler_source": {
+    "experiment": "compiler-v1",
+    "run": "run-001",
+    "git_sha": "ec642dc9c15e3822506dbc93e03db7667e297921",
+    "policy_version": "compiler-policy-v1",
+    "fixture_version": "1"
+  },
+  "primary_budget_rule": "Largest count of behaviourally eligible fixtures where B1-B5 and BO all produce usable inputs and at least two non-oracle strategies produce different bundle identities. Tie-break: medium.",
+  "primary_budget_calculation": {
+    "tight": 6,
+    "medium": 3,
+    "roomy": 3
+  },
+  "primary_budget": "tight",
+  "transfer_subset": [
+    {
+      "fixture": "heterogeneous-basic",
+      "budget": "medium",
+      "reason": "The Stage-3 harmful-labelled admission (harmful-h) exists only at medium/roomy. Bundle-property reason, fixed before any reader output."
+    }
+  ],
+  "eligible_fixtures": {
+    "qualification-trap": "eligible: staged preserves the required group while greedy baselines split it at tight",
+    "stale-cheap": "eligible: staged/oracle carry validated current state; baselines carry superseded state or nothing",
+    "wrong-scope": "eligible: staged/gated/oracle exclude the other world; dump/topk/weighted admit it",
+    "dependency-trap": "eligible at tight: staged/oracle carry the resolver dependency; others lack it",
+    "heterogeneous-basic": "eligible: rich strategy differences incl. harmful-labelled admission at medium/roomy",
+    "calibration-echo": "eligible negative control: answer present in the task; borrows heterogeneous-basic/tight bundles per condition"
+  },
+  "excluded_fixtures": {
+    "conflict-trap": "no strategy difference at any budget: all six bundles identical",
+    "dependency-cycle": "no strategy difference at any budget: all six bundles identical",
+    "mandatory-overflow": "tight/medium fail for all; roomy identical across strategies",
+    "no-legal-representation": "all strategies fail: compiler evidence only",
+    "rendered-overflow": "only dump deviates (drops task request), behaviourally inert by construction",
+    "required-unavailable": "staged/oracle fail by design; baselines ignore the requirement: compiler evidence only",
+    "shared-dependency": "no strategy difference at any budget: all six bundles identical",
+    "representation-alternatives": "alternative forms carry identical semantic content; no gradable behavioural difference possible between anchor and compact"
+  },
+  "repeats": {
+    "default": 1,
+    "diagnostic": [
+      "heterogeneous-basic__tight__B5__primary",
+      "stale-cheap__tight__B5__primary",
+      "qualification-trap__tight__MA__primary",
+      "calibration-echo__tight__B0__primary"
+    ],
+    "diagnostic_extra": 2
+  },
+  "schedule_seed": 20260923,
+  "readers": {
+    "primary": {
+      "adapter": "openai-chat",
+      "endpoint": "local Ollama, OpenAI-compatible /v1/chat/completions",
+      "model": "qwen3.5:latest",
+      "selection_rule": "locally-served instruct model, mid-size for speed; reasoning, cloud-routed, and embedding models excluded"
+    },
+    "transfer": {
+      "adapter": "openai-chat",
+      "endpoint": "local Ollama, OpenAI-compatible /v1/chat/completions",
+      "model": "mistral-small:latest",
+      "selection_rule": "second locally-served instruct model, larger size and different family for capability distance"
+    }
+  },
+  "decoding": {"temperature": 0, "seed": 20260923, "max_tokens": 512},
+  "prompt_version": "behavior-prompt-v1",
+  "parser_version": "action-parser-v1",
+  "retry_policy": "transport/provider errors only, up to 2 retries with fixed 2s/5s backoff; never retry valid model behaviour",
+  "max_calls": 80
+}

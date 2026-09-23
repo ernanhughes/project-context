@@ -105,3 +105,21 @@ Evaluator truth (`MUST/SHOULD/OPTIONAL/DISTRACTOR/HARMFUL`, oracle
 minima, expected outcomes) lives in `fixtures/compiler-v1/*.truth.json`
 and is loaded only by evaluation code. Frozen runs:
 `runs/compiler-v1/<run-id>/` via `contextlab compiler run`.
+
+## Stage 4 — matched behavioural evaluation (book Chapter 23)
+
+`src/project_context/readers/` holds the narrow reader contract
+(protocol, scripted fake, stdlib OpenAI-compatible adapter).
+`src/project_context/behavior/` holds the frozen prompt wrapper,
+deterministic parser, per-family graders, one linkage record
+(`BehaviorRecord`), bundle reconstruction with run-001 digest
+verification, interventional bundle surgery, and the suite runner with
+spend guard, retry policy, resume, and dry-run. Behavioural fixtures
+live in `fixtures/compiler-behavior-v1/` (task/truth/interventions per
+task, hidden truth never in reader payloads); the frozen contract in
+`experiments/compiler-behavior-v1/spec.yaml`. Frozen behavioural runs:
+`.local/runs/compiler-behavior-v1/<run-id>/` via
+`contextlab behavior run` (explicit `--max-calls` required). No model
+output ever tunes a task, grader, budget, or intervention: the fake
+reader serves development, and the first genuine call begins the frozen
+experiment.

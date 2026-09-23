@@ -1,0 +1,46 @@
+{
+  "interventions": [
+    {
+      "intervention_id": "MA",
+      "kind": "remove",
+      "remove_ids": ["exception-tenant"],
+      "add_records": []
+    },
+    {
+      "intervention_id": "MR",
+      "kind": "restore",
+      "remove_ids": [],
+      "add_records": []
+    },
+    {
+      "intervention_id": "MT",
+      "kind": "token-matched",
+      "remove_ids": ["exception-tenant"],
+      "add_records": [
+        {
+          "candidate_id": "mt-distract-2",
+          "content_identity": "mt-distract",
+          "representation_id": "full",
+          "content": "Old roadmap notes (synthetic).",
+          "source_kind": "synthetic-intervention",
+          "kind": "support"
+        }
+      ]
+    },
+    {
+      "intervention_id": "MW",
+      "kind": "wrong-context",
+      "remove_ids": ["exception-tenant"],
+      "add_records": [
+        {
+          "candidate_id": "wrong-tenant-cleared",
+          "content_identity": "wrong-tenant",
+          "representation_id": "full",
+          "content": "Tenant 042 cleared for release (synthetic).",
+          "source_kind": "synthetic-intervention",
+          "kind": "evidence"
+        }
+      ]
+    }
+  ]
+}

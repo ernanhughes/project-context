@@ -1,0 +1,10 @@
+{
+  "task_id": "scope-choice",
+  "family": "choose_evidence",
+  "prompt": "This task concerns Project A. Decide which project's evidence you will use for the migration investigation.",
+  "actions": ["USE_A", "USE_B", "ABSTAIN"],
+  "reason_options": ["in-scope", "cross-scope", "unknown"],
+  "grader_version": "choose-evidence-v1",
+  "source_compiler_fixture": "wrong-scope",
+  "calibration_only": false
+}

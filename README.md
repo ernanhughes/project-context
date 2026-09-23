@@ -68,6 +68,28 @@ Explicitly **not implemented**: models, network calls, learned rankers,
 retrieval/memory/artifact systems, ecological corpus dependence,
 behavioural evaluation (Chapter 23 owns it). See `docs/stage-3-report.md`.
 
+## Stage 4 scope (current)
+
+Matched behavioural evaluation of frozen compiler bundles (book
+Chapter 23 contract). Implemented:
+
+- narrow reader abstraction (`ReaderAdapter` protocol) with a scripted
+  offline `FakeReader` and one stdlib-HTTP OpenAI-compatible adapter;
+- frozen prompt wrapper, deterministic parser, per-family deterministic
+  graders, and one minimal `BehaviorRecord` linkage record reusing
+  `ModelInvocation`/`EvaluationObservation`/`RunManifest`;
+- `fixtures/compiler-behavior-v1/` (5 compiler-derived tasks + 1
+  calibration task, hidden truth, frozen interventions) with run-001
+  bundles consumed immutably under digest verification;
+- `experiments/compiler-behavior-v1/` (frozen spec, seeded schedule,
+  fixed readers/decoding, spend guard);
+- `contextlab behavior fixtures|inspect|plan|dry-run|run|validate-run|canary`
+  CLI with resume, retry, and byte-identical restoration guarantees.
+
+Explicitly **not implemented**: behavioural conclusions (pending the
+frozen live run), multi-reader averaging, agent-harness readers,
+ecological prevalence. See `docs/stage-4-report.md`.
+
 ## Setup
 
 Requires Python 3.11+ (3.12+ preferred) and [`uv`](https://docs.astral.sh/uv/).
