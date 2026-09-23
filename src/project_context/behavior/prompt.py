@@ -4,12 +4,14 @@ own earned metadata — the wrapper adds none."""
 
 from __future__ import annotations
 
-PROMPT_VERSION = "behavior-prompt-v1"
+PROMPT_VERSION = "behavior-prompt-v2"
 
 SYSTEM_TEXT = (
     "You are completing a controlled software-engineering task. "
     "Use only the task description and the supplied project context. "
-    "Return exactly one JSON object matching the output schema. "
+    "Return exactly one JSON object matching the output schema, using "
+    "exactly these keys and no others: "
+    "action, target, value, reason_code. "
     "Do not invent project facts that are not present."
 )
 

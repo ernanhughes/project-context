@@ -1,6 +1,10 @@
 {
   "behavior_set": "compiler-behavior-v1",
-  "behavior_version": "1",
+  "behavior_version": "2",
+  "version_notes": [
+    "v1: initial freeze (prompt behavior-prompt-v1).",
+    "v2: prompt wrapper behavior-prompt-v2 adds the explicit envelope-keys sentence after run-001 (pilot) showed 0/54 parseable outputs: the reader followed task wording instead of the schema. Tasks, truth, graders, parser, budgets, schedule, and readers unchanged."
+  ],
   "evidence_class": "synthetic",
   "evidence_note": "SYNTHETIC behavioural fixtures over frozen synthetic compiler bundles. No model has run; no behavioural claim exists yet.",
   "compiler_source": {

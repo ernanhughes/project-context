@@ -45,5 +45,7 @@ provider_model: local Ollama via OpenAI-compatible endpoint; primary
   rule (local instruct models with content delivery; qwen3.5 retired for
   empty-content contract failure before any experimental call); frozen
   before outcomes
+prompt_version: behavior-prompt-v2 (v1 retired after the run-001 pilot:
+  envelope keys implicit; v2 states them explicitly; tasks unchanged)
 cost_ceiling: 80-model-call guard (--max-calls 80); zero monetary spend
   (local inference); canary 1 trivial non-experimental call only

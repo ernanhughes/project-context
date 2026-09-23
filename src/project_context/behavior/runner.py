@@ -28,6 +28,7 @@ from project_context.behavior.fixtures import (
 from project_context.behavior.parse import PARSER_VERSION, parse_action
 from project_context.behavior.prompt import (
     EMPTY_CONTEXT_MARKER,
+    PROMPT_VERSION,
     SYSTEM_TEXT,
     action_schema_text,
 )
@@ -356,7 +357,7 @@ def run_case(
         parse_status=parse_status,
         parsed_action=action.to_dict() if action else None,
         raw_response_digest=digest_text(response.raw_text),
-        prompt_version="behavior-prompt-v1",
+        prompt_version=PROMPT_VERSION,
         parser_version=PARSER_VERSION,
         grader_version=task["grader_version"],
     )

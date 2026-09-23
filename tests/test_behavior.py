@@ -69,7 +69,7 @@ def _behavior_set():
 
 def test_manifest_records_preregistration():
     manifest = _manifest()
-    assert manifest["behavior_version"] == "1"
+    assert manifest["behavior_version"] == "2"  # v1 retired with run-001 pilot
     assert manifest["primary_budget"] == "tight"
     assert manifest["schedule_seed"] == 20260923
     assert manifest["readers"]["primary"]["model"] == "mistral-small:latest"
