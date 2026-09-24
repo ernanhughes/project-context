@@ -1,0 +1,1 @@
+{"requests": {"req-h04-0": {"h04-00": {"reasons": ["no_activation_reason"], "state": "dormant"}, "h04-01": {"reasons": ["superseded"], "state": "ineligible"}, "h04-02": {"reasons": ["contradicted"], "state": "ineligible"}, "h04-03": {"reasons": ["scope_component_match", "scope_path_match"], "state": "active"}}}}

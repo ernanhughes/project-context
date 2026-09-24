@@ -1,0 +1,1 @@
+{"requests": {"req-alpha-schema": {"decision-a": {"reasons": ["scope_component_match"], "state": "active"}, "decision-b": {"reasons": ["scope_repo_mismatch"], "state": "ineligible"}}, "req-beta-schema": {"decision-a": {"reasons": ["scope_repo_mismatch"], "state": "ineligible"}, "decision-b": {"reasons": ["scope_component_match"], "state": "active"}}}}

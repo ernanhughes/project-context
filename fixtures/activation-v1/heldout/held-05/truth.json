@@ -1,0 +1,1 @@
+{"requests": {"req-h05-0": {"h05-00": {"reasons": ["insufficient_scope_to_decide"], "state": "unknown"}, "h05-01": {"reasons": ["no_activation_reason"], "state": "dormant"}}}}

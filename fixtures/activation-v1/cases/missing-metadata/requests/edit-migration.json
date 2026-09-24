@@ -1,0 +1,1 @@
+{"branch": null, "components": ["migrations"], "created_at": "2026-09-24T11:01:00Z", "evidence_refs": [], "operation": "modify", "paths": ["db/migrations/017"], "repo": "project-context", "request_id": "req-edit-migration", "schema_version": "project_context.activation_request.v1", "task": null, "task_id": "task-migration", "workspace": null}

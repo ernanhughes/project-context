@@ -1,0 +1,42 @@
+# Frozen experiment contract: activation-v1. See specs/experiment-contract.md.
+question: >-
+  Given a projected ledger state and a structured context request, can a
+  deterministic activator select the currently relevant durable state while
+  leaving valid but irrelevant state dormant and rejecting
+  stale/superseded/contradicted state, better than naive policies?
+hypotheses: [H1-typed-oracle-match, H2-baselines-fail-adversarial, H3-heldout-generality]
+population: fixtures/activation-v1 manifest v1 (10 authored core cases plus
+  seeded held-out generated cases; all synthetic)
+independent_variable: activation policy mode
+controlled_variables:
+  - ledger state per case (frozen events.jsonl, projected deterministically)
+  - request per case (frozen request JSON, structured features only)
+  - oracle per case (frozen truth.json, tests and eval CLI only)
+  - policy: activation-policy-v1 (typed) plus naive modes in the same engine
+  - decision ordering: item_id sort (neutral, not a ranking)
+  - no models, no network, no retrieval, no compiler, no injection
+conditions: [typed, all_unresolved, scope_only, newest]
+measurements:
+  - activation precision and recall against the oracle (per case, per policy)
+  - false activation, missed activation (counts, kept separate)
+  - scope-leak activation, stale activation, superseded activation (counts)
+  - UNKNOWN rate
+  - reason-code exact match on core cases (typed policy)
+success_criteria:
+  - typed: oracle state match on every core and held-out decision; exact
+    reason match on core cases
+  - baselines: measured as-is for comparison, not required to pass; each
+    naive mode must fail at least one adversarial family
+failure_criteria:
+  - any typed oracle mismatch on core cases
+  - any typed oracle mismatch on held-out cases
+  - any naive mode matching the oracle everywhere (fixtures too easy)
+  - nondeterministic rerun output
+  - any oracle truth token in runtime sources, events, or requests
+falsification:
+  - all-unresolved parity with typed (selectivity buys nothing)
+  - scope-only parity with typed (validity gate buys nothing)
+  - newest parity with typed (structure buys nothing)
+seed_strategy: held-out generator seed frozen in the fixture manifest
+provider_model: synthetic, no model calls
+cost_ceiling: zero spend (offline suite)

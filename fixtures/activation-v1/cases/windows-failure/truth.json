@@ -1,0 +1,1 @@
+{"requests": {"req-docs-only": {"assumption-001": {"reasons": ["no_activation_reason"], "state": "dormant"}, "failure-001": {"reasons": ["no_activation_reason"], "state": "dormant"}}, "req-fix-paths": {"assumption-001": {"reasons": ["no_activation_reason"], "state": "dormant"}, "failure-001": {"reasons": ["scope_component_match", "scope_path_match"], "state": "active"}}}}

@@ -1,0 +1,1 @@
+{"branch": null, "components": ["schema"], "created_at": "2026-09-24T11:00:00Z", "evidence_refs": [], "operation": null, "paths": ["src/project_context/schema/migrate.py"], "repo": "project-context", "request_id": "req-schema-task", "schema_version": "project_context.activation_request.v1", "task": "schema-migration", "task_id": "task-schema", "workspace": null}

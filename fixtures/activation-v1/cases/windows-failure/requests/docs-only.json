@@ -1,0 +1,1 @@
+{"branch": null, "components": ["docs"], "created_at": "2026-09-24T11:01:00Z", "evidence_refs": [], "operation": "document", "paths": ["docs/guide.md"], "repo": "project-context", "request_id": "req-docs-only", "schema_version": "project_context.activation_request.v1", "task": null, "task_id": "task-docs", "workspace": null}
