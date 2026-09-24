@@ -1,8 +1,9 @@
-"""Stage 6D-L live injection qualification tooling (offline phases only).
+"""Stage 6D-L / 6D-R1 live qualification tooling (offline phases only).
 
 This script never makes a model call and never touches a live session.
-It implements the deterministic offline phases of the frozen probe spec
-`experiments/runtime-live-6dl/spec.md`:
+It implements the deterministic offline phases of the frozen probe specs
+`experiments/runtime-live-6dl/spec.md` and
+`experiments/runtime-live-6dr1/spec.md`:
 
 - `render`: pre-flight checks, synthetic bundle construction through
   the frozen Stage 6D domain/render code, exact-byte block file, intent
@@ -10,9 +11,12 @@ It implements the deterministic offline phases of the frozen probe spec
 - `reconcile`: reads only spool bytes appended after the snapshot,
   checks every new observed record structurally, privacy-scans the
   artifact, and writes the frozen qualification record with a verdict.
+  With `--r1` it additionally evaluates the staged gate ladder
+  (loader, execution, mutation, observation, reconciliation) from the
+  server log and the runtime trace file.
 
-The single live call (`opencode run` in the throwaway directory with
-the child-only probe environment) happens between the two phases, run
+The live calls (`opencode run` in the throwaway directory with the
+child-only probe environment) happen between the two phases, run
 explicitly by the operator — never by this script.
 """
 
@@ -46,12 +50,15 @@ SPEC_ID = "runtime-live-6dl"
 BUNDLE_ID = "rt-live-probe-6dl"
 ITEM_ID = "live-probe-item-001"
 EXPECTED_MARKER = "ORANGE-QUARTZ-731"
-ITEM_CONTENT = (
-    "RUNTIME-LIVE-PROBE-6D-L\n"
-    "For this synthetic qualification request only,\n"
-    "the marker value is ORANGE-QUARTZ-731."
-)
+PROBE_TAG = "RUNTIME-LIVE-PROBE-6D-L"
 PROMPT = "Reply with exactly the word READY and nothing else."
+
+
+def _item_content(tag: str, marker: str) -> str:
+    return f"{tag}\nFor this synthetic qualification request only,\nthe marker value is {marker}."
+
+
+ITEM_CONTENT = _item_content(PROBE_TAG, EXPECTED_MARKER)
 
 
 def _git(*args: str) -> str:
@@ -107,18 +114,23 @@ def cmd_render(args: argparse.Namespace) -> int:
         return 1
     spool.mkdir(parents=True, exist_ok=True)
 
+    spec_id = args.spec_id or SPEC_ID
+    bundle_id = args.bundle_id or BUNDLE_ID
+    item_id = args.item_id or ITEM_ID
+    marker = args.marker or EXPECTED_MARKER
+    tag = "RUNTIME-LIVE-PROBE-6D-R1" if spec_id == "runtime-live-6dr1" else PROBE_TAG
     item = ContextItem(
-        id=ITEM_ID,
+        id=item_id,
         source="ledger",
         kind="test_constraint",
-        content=ITEM_CONTENT,
+        content=_item_content(tag, marker),
         token_provenance="approximation",
     )
     bundle = ContextBundle(
-        id=BUNDLE_ID,
+        id=bundle_id,
         items=(item,),
         created_at="2026-09-24T12:00:00Z",
-        layout_trace=(ITEM_ID,),
+        layout_trace=(item_id,),
         evidence_class="synthetic",
     )
     rendered = render_bundle(bundle, RenderPolicy())
@@ -139,14 +151,14 @@ def cmd_render(args: argparse.Namespace) -> int:
     for path in sorted(spool.rglob("*.jsonl")):
         inventory[str(path.relative_to(spool))] = path.stat().st_size
     intent = {
-        "spec_id": SPEC_ID,
+        "spec_id": spec_id,
         "synthetic": True,
         "bundle_id": bundle.id,
         "bundle_digest": bundle_digest,
         "render_policy_id": rendered.policy_id,
         "rendered_digest": rendered.digest,
         "rendered_text": rendered.text,
-        "expected_marker": EXPECTED_MARKER,
+        "expected_marker": marker,
         "injection_location": INJECTION_LOCATION,
         "prompt": PROMPT,
         "spool_inventory": inventory,
@@ -256,7 +268,7 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
     }
     verdict = "PASS" if all(required.values()) else "FAIL"
     artifact = {
-        "qualification_id": SPEC_ID,
+        "qualification_id": intent.get("spec_id", SPEC_ID),
         "purpose": "live integration qualification",
         "synthetic": True,
         "verdict": verdict,
@@ -307,6 +319,21 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
             "Model response is diagnostic only, never the criterion.",
         ],
     }
+    if args.r1:
+        gates, gate_detail = _evaluate_gates(args, per_record, context_records)
+        artifact["mode"] = "6dr1"
+        artifact["prev_qualification"] = args.prev_qualification
+        artifact["gates"] = gates
+        artifact["gate_detail"] = gate_detail
+        artifact["ordering"] = _ordering(gates, gate_detail)
+        artifact["verdict"] = "PASS" if all(gates.values()) else "FAIL"
+        artifact["limitations"] = artifact["limitations"] + [
+            "Loader and execution gates rest on the server log and the "
+            "opt-in runtime trace, both local-only and digest-recorded.",
+            "Mutation-before-observer is inferred from trace plus capture, "
+            "not from registration order.",
+        ]
+        verdict = artifact["verdict"]
     blob = json.dumps(artifact, indent=2)
     violations = _privacy_scan(blob)
     if violations:
@@ -321,11 +348,86 @@ def cmd_reconcile(args: argparse.Namespace) -> int:
     return 0
 
 
+def _evaluate_gates(
+    args: argparse.Namespace, per_record: list[dict], context_records: int
+) -> tuple[dict[str, bool], dict]:
+    """Staged gate ladder for 6D-R1. Server-log text and trace content
+    stay local; only digests, booleans, and outcome summaries enter."""
+    entrypoint_found = False
+    server_log_digest = None
+    if args.server_log:
+        raw = Path(args.server_log).read_bytes()
+        server_log_digest = hashlib.sha256(raw).hexdigest()
+        blob = raw.decode("utf-8", errors="replace").replace("\\", "/")
+        entrypoint_found = f"{args.plugin_dir}/index.ts" in blob and "loading plugin" in blob
+    setup_found = False
+    outcomes: list[str] = []
+    deltas: list[int] = []
+    hook_records = 0
+    trace_digest = None
+    if args.trace_file and Path(args.trace_file).exists():
+        trace_digest = _sha256_file(Path(args.trace_file))
+        for line in Path(args.trace_file).read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            if rec.get("kind") == "setup" and rec.get("hookRegistered") is True:
+                setup_found = True
+            if rec.get("kind") == "hook":
+                hook_records += 1
+                outcomes.append(str(rec.get("outcome")))
+                try:
+                    deltas.append(int(rec.get("postBlocks", 0)) - int(rec.get("preBlocks", 0)))
+                except (TypeError, ValueError):
+                    deltas.append(-99)
+    injected = any(o == "injected" and d == 1 for o, d in zip(outcomes, deltas))
+    context_pass = context_records >= 1 and all(
+        e["passed"] for e in per_record if e["request_kind"] == "context"
+    )
+    observed_marker = context_records >= 1 and all(
+        e["checks"]["markers_present"]
+        and e["checks"]["block_exact"]
+        and e["checks"]["block_once"]
+        and e["checks"]["order_preserved"]
+        for e in per_record
+        if e["request_kind"] == "context"
+    )
+    gates = {
+        "loader": entrypoint_found and setup_found,
+        "execution": hook_records >= 1,
+        "mutation": injected,
+        "observation": observed_marker,
+        "reconciliation": context_pass,
+    }
+    detail = {
+        "server_log_digest": server_log_digest,
+        "entrypoint_found": entrypoint_found,
+        "setup_record_found": setup_found,
+        "trace_digest": trace_digest,
+        "hook_records": hook_records,
+        "hook_outcomes": sorted(set(outcomes)),
+        "injected_with_single_block_growth": injected,
+    }
+    return gates, detail
+
+
+def _ordering(gates: dict[str, bool], detail: dict) -> str:
+    if gates["mutation"] and gates["observation"]:
+        return "runtime-before-observer"
+    if gates["mutation"] and not gates["observation"]:
+        return "observer-before-runtime-or-nonpersistent"
+    return "unknown"
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Stage 6D-L probe tooling (offline phases).")
     sub = parser.add_subparsers(dest="command", required=True)
     p_render = sub.add_parser("render", help="pre-flight and render the probe block")
     p_render.add_argument("--workdir", required=True)
+    p_render.add_argument("--spec-id", default=None)
+    p_render.add_argument("--bundle-id", default=None)
+    p_render.add_argument("--item-id", default=None)
+    p_render.add_argument("--marker", default=None)
     p_reconcile = sub.add_parser("reconcile", help="reconcile spool against intent")
     p_reconcile.add_argument("--workdir", required=True)
     p_reconcile.add_argument("--out", required=True)
@@ -338,6 +440,11 @@ def main(argv: list[str]) -> int:
     p_reconcile.add_argument("--opencode-version", default="unavailable")
     p_reconcile.add_argument("--observer-plugin-version", default="unavailable")
     p_reconcile.add_argument("--runtime-plugin-version", default="unavailable")
+    p_reconcile.add_argument("--r1", action="store_true")
+    p_reconcile.add_argument("--server-log", default=None)
+    p_reconcile.add_argument("--trace-file", default=None)
+    p_reconcile.add_argument("--plugin-dir", default=None)
+    p_reconcile.add_argument("--prev-qualification", default=None)
     args = parser.parse_args(argv)
     if args.command == "render":
         return cmd_render(args)
