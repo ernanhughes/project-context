@@ -33,3 +33,17 @@ manifests) remain immutable and describe the implementation that
 existed at the time. The behavioural experiment
 (`experiments/compiler-behavior-v1`) stays here; it consumes bundle
 objects through the shim.
+
+## TypeScript canonical compiler (0.2.0)
+
+The standalone repository is now TypeScript-canonical
+(`project-context-compiler` 0.2.0, same GitHub repository). The
+Python 0.1.0 implementation is frozen under tag `python-v0.1.0` in
+that repository and remains the pinned dependency here, so
+historical runs reproduce exactly.
+
+For new compiler use, the language boundary is JSON through the
+TypeScript CLI (`context-compiler compile --request ... --output
+...`); the Python harness reads the emitted bundle/result/trace
+under the unchanged `project_context.*.v1` schemas. No second
+Python compiler is maintained to avoid this boundary.
