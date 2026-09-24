@@ -1,0 +1,37 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "amendment_id": "harness-amendment-02",
+  "reason": "production OpenCode executable could not be spawned from bare name on Windows PATH shims",
+  "failure": {
+    "execution_attempt": 3,
+    "run_id": "olv1-r001",
+    "stage": "inference-process-spawn",
+    "inference_started": false,
+    "subject_model_calls": 0,
+    "detail": "WinError 2 before process creation; bare opencode name unexecutable via CreateProcess"
+  },
+  "root_cause": {
+    "requested": "opencode",
+    "path_exposure": "opencode/opencode.cmd/opencode.ps1 shims",
+    "resolved_production_executable": "opencode.CMD via PATH executable lookup (machine-local absolute path appears in preflight output only, never committed)",
+    "missing": "explicit executable resolution in production spawn path"
+  },
+  "repair": {
+    "shared_executable_resolver": "resolve_opencode_executable used by preflight and production_executor",
+    "preflight_gate": "production_executable_resolution with resolved path and version",
+    "production_spawn": "resolved executable as argv[0]; no shell delegation; no fallback ladder",
+    "fail_closed": "None resolution stops before inference"
+  },
+  "frozen_experimental_inputs_changed": false,
+  "behavioural_observations_before_amendment": 0,
+  "previous_amendment": "harness-amendment-01",
+  "original_harness_freeze_commit": "e5256e7",
+  "original_grader_digest": "1f7e02f1d1108733be9a7d8b0e1a1c9d8e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1",
+  "amendment01_runner_digest": "2b4f60e3fbc27282e4c7d8e3a475413B8bBA1E",
+  "new_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "new_runner_digest": "613aa2f28c72d502e9c80c17814b0689ec5cf5d0389ee1cf187e2b82943826f7",
+  "result_schema_identity": "project_context.leverage_result.v1",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "amendment_digest": "05b4a894de2fbada6731809cdc593cb916092988d511fc9265e79a98b5754a1e"
+}

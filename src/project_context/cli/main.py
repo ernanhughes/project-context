@@ -1594,6 +1594,7 @@ def cmd_leverage_preflight() -> int:
     for name in (
         "freeze_identities",
         "model_metadata_identity",
+        "production_executable_resolution",
         "schedule_slots",
         "grader_registry",
         "payload_binding",
@@ -1602,6 +1603,11 @@ def cmd_leverage_preflight() -> int:
         "overall",
     ):
         print(f"{name}: {checks.get(name)}")
+    identity = report.get("executable_identity", {})
+    assert isinstance(identity, dict)
+    print(f"requested executable: {identity.get('requested')}")
+    print(f"resolved executable: {identity.get('resolved')}")
+    print(f"OpenCode version: {identity.get('opencode_version')}")
     print(f"subject-model calls: {report['subject_model_calls']}")
     print(f"fixture-probing calls: {report['fixture_probing_calls']}")
     return 0 if checks.get("overall") == "PASS" else 1

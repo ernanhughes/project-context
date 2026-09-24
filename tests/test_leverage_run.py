@@ -462,6 +462,129 @@ def test_wave_stops_before_inference_on_identity_failure():
         _rmtree(wave.parent)
 
 
+def test_production_argv_uses_resolved_executable(monkeypatch):
+    import subprocess as subprocess_mod
+
+    from project_context.leverage import run as run_mod
+
+    def fake_which(name):
+        return "C:\\Tools\\opencode.CMD" if name == "opencode" else None
+
+    monkeypatch.setattr(run_mod.shutil, "which", fake_which)
+    seen = {}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        seen["kwargs"] = kwargs
+
+        class Done:
+            returncode = 0
+            stdout = "READY"
+            stderr = ""
+
+        return Done()
+
+    monkeypatch.setattr(subprocess_mod, "run", fake_run)
+    schedule = _schedule()
+    slot = next(r for r in schedule["runs"] if r["run_id"] == "olv1-r003")
+    out = run_mod.production_executor(
+        slot, schedule, Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()), {}
+    )
+    assert seen["cmd"][0] == "C:\\Tools\\opencode.CMD"
+    assert seen["cmd"][1:6] == [
+        "run",
+        "--standalone",
+        "--auto",
+        "--model",
+        "ollama/mistral-small:latest",
+    ]
+    assert "shell" not in seen["kwargs"]
+    assert out.returncode == 0
+
+
+def test_preflight_and_executor_share_resolver(monkeypatch):
+    from project_context.leverage import run as run_mod
+
+    calls = []
+    monkeypatch.setattr(run_mod, "resolve_opencode_executable", lambda: calls.append(1) or None)
+    report = run_mod.preflight(entries=[dict(e) for e in GOOD_ENTRIES])
+    assert report["checks"]["production_executable_resolution"] != "PASS"
+    assert report["checks"]["overall"] != "PASS"
+    schedule = _schedule()
+    slot = next(r for r in schedule["runs"] if r["run_id"] == "olv1-r003")
+    try:
+        run_mod.production_executor(
+            slot, schedule, Path(tempfile.mkdtemp()), Path(tempfile.mkdtemp()), {}
+        )
+    except WaveStop:
+        pass
+    else:
+        raise AssertionError("expected WaveStop")
+    assert len(calls) == 2
+
+
+def test_missing_executable_fails_closed(monkeypatch):
+    from project_context.leverage import run as run_mod
+
+    assert run_mod.resolve_opencode_executable() is not None
+    monkeypatch.setattr(run_mod.shutil, "which", lambda name: None)
+    assert run_mod.resolve_opencode_executable() is None
+    report = run_mod.preflight(entries=[dict(e) for e in GOOD_ENTRIES])
+    assert report["checks"]["production_executable_resolution"] != "PASS"
+    assert report["checks"]["overall"] != "PASS"
+
+
+def test_spaced_path_preserved_verbatim(monkeypatch):
+    from project_context.leverage import run as run_mod
+
+    spaced = "C:\\Users\\Example User\\AppData\\Roaming\\npm\\opencode.CMD"
+    monkeypatch.setattr(run_mod.shutil, "which", lambda name: spaced)
+    assert run_mod.resolve_opencode_executable() == spaced
+
+
+def test_wave_reaches_executor_after_identity():
+    from project_context.leverage import run as run_mod
+
+    schedule = _schedule()
+    wave = Path(tempfile.mkdtemp()) / "wave"
+
+    class Sentinel(Exception):
+        pass
+
+    def sentinel_executor(slot, schedule, workspace, run_dir, env):
+        raise Sentinel("inference boundary reached")
+
+    try:
+        try:
+            run_mod.run_wave(
+                schedule,
+                FIXTURES,
+                wave,
+                sentinel_executor,
+                "test-digest",
+                entries=[dict(e) for e in GOOD_ENTRIES],
+            )
+        except Sentinel:
+            pass
+        else:
+            raise AssertionError("expected Sentinel (setup passed, inference reached)")
+    finally:
+        _rmtree(wave.parent)
+
+
+def test_resolved_executable_spawns_version_without_inference():
+    import subprocess as subprocess_mod
+
+    from project_context.leverage.run import opencode_version, resolve_opencode_executable
+
+    resolved = resolve_opencode_executable()
+    assert resolved is not None
+    version = opencode_version(resolved)
+    assert version is not None and len(version) > 0
+    proc = subprocess_mod.run([resolved, "--version"], capture_output=True, text=True, timeout=60)
+    assert proc.returncode == 0
+
+
 def test_cli_preflight_and_execute_guard(monkeypatch, tmp_path):
     from project_context.cli.main import main
     from project_context.leverage import run as run_mod

@@ -187,6 +187,37 @@ def fetch_daemon_tags(timeout: int = 20) -> list[dict]:
     return entries if isinstance(entries, list) else []
 
 
+OPENCODE_REQUESTED_NAME = "opencode"
+
+
+def resolve_opencode_executable() -> str | None:
+    """Shared executable resolution for preflight AND production spawning.
+
+    Returns a concrete executable path or None. Direct execution of the
+    resolved path is used everywhere; no shell delegation, no fallback
+    ladder, no PATH mutation. None means hard stop before inference."""
+    resolved = shutil.which(OPENCODE_REQUESTED_NAME)
+    if not resolved:
+        return None
+    return resolved
+
+
+def opencode_version(executable: str, timeout: int = 60) -> str | None:
+    """Proven-non-inference version query. No session, no model call."""
+    try:
+        proc = subprocess.run(
+            [executable, "--version"],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except Exception:
+        return None
+    if proc.returncode != 0:
+        return None
+    return proc.stdout.strip().splitlines()[0] if proc.stdout.strip() else None
+
+
 def verify_scheduled_model(
     schedule: dict, entries: list[dict] | None = None, timeout: int = 20
 ) -> dict[str, object]:
@@ -310,8 +341,11 @@ def production_executor(
     task_dir = FIXTURES_ROOT / slot["fixture_id"]
     fix = json.loads((task_dir / "fixture.json").read_text(encoding="utf-8"))
     model = str(schedule["subject_model"]["model"])
+    executable = resolve_opencode_executable()
+    if executable is None:
+        raise WaveStop("opencode executable unresolvable: hard stop before inference")
     cmd = [
-        "opencode",
+        executable,
         "run",
         "--standalone",
         "--auto",
@@ -660,6 +694,16 @@ def preflight(
     checks["payload_binding"] = _check_payload_binding(schedule, fixtures_root)
     checks["hidden_truth_isolation"] = _check_hidden_truth_isolation(schedule, fixtures_root)
     checks["runtime_wiring"] = _check_runtime_wiring(schedule)
+    executable = resolve_opencode_executable()
+    version = opencode_version(executable) if executable else None
+    report["executable_identity"] = {
+        "requested": OPENCODE_REQUESTED_NAME,
+        "resolved": executable,
+        "opencode_version": version,
+    }
+    checks["production_executable_resolution"] = (
+        "PASS" if executable and version else f"FAIL: resolved={executable} version={version}"
+    )
     checks["overall"] = "PASS" if all(str(v) == "PASS" for v in checks.values()) else "FAIL"
     return report
 
@@ -724,8 +768,6 @@ def _check_hidden_truth_isolation(schedule: dict, fixtures_root: Path) -> str:
 def _check_runtime_wiring(schedule: dict) -> str:
     """Observer/runtime packages present with expected versions; opencode binary on PATH."""
     try:
-        import shutil
-
         integ = REPO / "integrations"
         for package, version in (
             ("opencode", schedule["subject_model"].get("observer_plugin_version", "0.3.0")),
@@ -761,6 +803,8 @@ def run_wave(
             f"got {str(detail['actual_digest'] or 'none')[:12]}"
         )
     actual = str(detail["actual_digest"]) if detail["actual_digest"] else None
+    if resolve_opencode_executable() is None:
+        raise WaveStop("opencode executable unresolvable: hard stop before inference")
     errors = verify_freeze(schedule, fixtures_root)
     if errors:
         raise WaveStop(f"frozen identity failure: {errors}")
