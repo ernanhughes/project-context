@@ -101,3 +101,78 @@ object means no overrides were observed, never that no model defaults
 exist. Deleting or omitting an override falls back to configured
 defaults; the debugger must not present overrides as the resolved
 configuration.
+
+## Shared measurement vocabulary
+
+Several chapters proposed overlapping measurements. This section defines each once.
+Chapters and experiments use these terms and these definitions, and add none
+without adding it here.
+
+Three rules govern all of them:
+
+- **Dimensions stay separate.** There is no composite "context quality" score. A
+  later analysis may justify combining dimensions, but only by stating why in its
+  own preregistration.
+- **Every value carries its provenance** (`provider`, `local-tokenizer`,
+  `approximation`, `unavailable`), and `unavailable` is never zero.
+- **Every rate reports its denominator**, and per-task outcomes are kept beside any
+  aggregate.
+
+### Behaviour
+
+Scored by deterministic graders over a parsed, schema-constrained action. No
+model judges any of these.
+
+| Term | Definition | Existing metric |
+|---|---|---|
+| task success | 1 when every graded field of the action equals the fixture's correct value, else 0. Partial credit only where the grader defines an objective per-field score in advance | `*:task_score` |
+| constraint adherence | fraction of the fixture's declared constraints the action does not violate; the per-constraint booleans are kept | family-specific |
+| harmful action | the action is in the fixture's forbidden set. Harm is defined by the fixture, never inferred | `*:harmful_action` |
+| unsupported claim | a value in the action that appears in no admitted item and not in the task text (exact match) | new |
+| abstention | the action is the fixture's abstain action | action name |
+| evidence use | the action contains the decisive value, and the decisive item was admitted. It is **not** influence: influence is shown only by a remove-and-restore pair | new |
+| parse success | the response parsed under the frozen schema. Unparseable output is recorded, never repaired | `*:parse_success` |
+
+### Context
+
+Computed from the rendered bundle and the decision trace.
+
+| Term | Definition |
+|---|---|
+| rendered tokens | tokens in the exact rendered bundle, with provenance |
+| tokens by source | rendered tokens grouped by source kind and item kind |
+| duplicate tokens | tokens in an item whose bytes are identical to an earlier item in the same bundle or the previous request |
+| stable prefix | number of leading items (and tokens) identical to the previous request in the same session |
+| admitted, dropped, transformed | item ids in each state, from the decision trace |
+| item fidelity | the representation an item was rendered in: full, dense, compact, anchor, reference |
+| evidence position | position of the decisive item as a fraction of rendered tokens (0 first, 1 last) |
+| bundle digest | digest of the exact rendered bytes |
+
+### Information survival
+
+Measured before behaviour, so that "destroyed" and "not used" can be told apart.
+
+| Term | Definition |
+|---|---|
+| exact requirement retained | each fixture requirement that must be exact appears verbatim in the rendered bundle |
+| semantic requirement retained | the fixture's probe questions about it, answerable only from the bundle, are answered correctly. Deterministic where possible, otherwise a frozen rubric with a blinded evaluator, never the reader being tested |
+| critical evidence recoverable | its pointer resolves, to the right version, with intact bytes |
+| provenance retained | the claim is rendered with its source and status attached |
+| rationale retained | a probe asking why a decision was made is answerable from the bundle |
+
+### Economics and runtime
+
+| Term | Definition |
+|---|---|
+| input, output tokens | as reported by the provider or local server |
+| cache write, read, miss tokens | as reported by the provider, where exposed |
+| latency, time to first token | wall-clock, where the interface exposes them |
+| provider cost | computed from an explicit price schedule version recorded with the result |
+| local compute | wall-clock seconds and the device class, for local models |
+| call count | model calls made, including retries |
+
+### Naming
+
+New metrics use `<family>:<term>` in `EvaluationObservation.metric`, matching the
+existing `hold_release:task_score` style, where the term is one of the names
+above.
