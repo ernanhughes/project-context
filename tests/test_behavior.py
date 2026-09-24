@@ -741,3 +741,163 @@ def test_cli_validate_run_on_fake_suite(tmp_path):
     )
     assert cli_main(["behavior", "validate-run", str(run_dir)]) == 0
     assert cli_main(["behavior", "validate-run", str(tmp_path / "missing")]) == 3
+
+
+def test_moving_alias_detection():
+    from project_context.readers.openai_chat import is_moving_alias
+
+    assert is_moving_alias("mistral-small")
+    assert is_moving_alias("mistral-small:latest")
+    assert not is_moving_alias("llama3.1:8b")
+    assert not is_moving_alias("mistral-small:24b-instruct-2501-q4_K_M")
+
+
+def _tags_transport(payload, status=200):
+    def transport(method, url, headers, body):
+        assert method == "GET" and url.endswith("/api/tags") and "/v1" not in url
+        return status, json.dumps(payload).encode("utf-8")
+
+    return transport
+
+
+def test_resolve_identity_records_digest_offline():
+    adapter = OpenAIChatAdapter(
+        OpenAIChatConfig(base_url="http://x/v1", model="llama3.1:8b"),
+        transport=_tags_transport(
+            {
+                "models": [
+                    {"name": "other:1b", "digest": "aaa"},
+                    {"name": "llama3.1:8b", "digest": "42182419e950"},
+                ]
+            }
+        ),
+    )
+    assert adapter._model_version() is None  # nothing invented before resolution
+    identity = adapter.resolve_identity()
+    assert identity == {
+        "model_digest": "42182419e950",
+        "model_identity_source": "ollama-api-tags",
+    }
+    info = adapter.describe()
+    assert info["model_digest"] == "42182419e950"
+    assert info["model_alias_moving"] is False
+    assert adapter._model_version() == "digest:42182419e950"
+
+
+def test_resolve_identity_stays_unavailable_never_invented():
+    listed_elsewhere = OpenAIChatAdapter(
+        OpenAIChatConfig(base_url="http://x/v1", model="mistral-small:latest"),
+        transport=_tags_transport({"models": [{"name": "other:1b", "digest": "aaa"}]}),
+    )
+    assert listed_elsewhere.resolve_identity() == {
+        "model_digest": None,
+        "model_identity_source": "unavailable",
+    }
+
+    def broken(method, url, headers, body):
+        raise OSError("connection refused")
+
+    down = OpenAIChatAdapter(
+        OpenAIChatConfig(base_url="http://x/v1", model="llama3.1:8b"), transport=broken
+    )
+    assert down.resolve_identity()["model_digest"] is None
+    assert down._model_version() is None
+
+    bad_status = OpenAIChatAdapter(
+        OpenAIChatConfig(base_url="http://x/v1", model="llama3.1:8b"),
+        transport=_tags_transport({}, status=404),
+    )
+    assert bad_status.resolve_identity()["model_identity_source"] == "unavailable"
+
+
+class _LiveFake(FakeReader):
+    """Offline stand-in that presents as a live adapter."""
+
+    def __init__(self, model, digest):
+        super().__init__(rules=[(name, {"ok": text}) for name, text in _RULES.items()])
+        self._model = model
+        self._digest = digest
+
+    def describe(self):
+        info = dict(super().describe())
+        from project_context.readers.openai_chat import is_moving_alias
+
+        info.update(live=True, model=self._model, model_alias_moving=is_moving_alias(self._model))
+        return info
+
+    def resolve_identity(self):
+        return {
+            "model_digest": self._digest,
+            "model_identity_source": "ollama-api-tags" if self._digest else "unavailable",
+        }
+
+
+def _run_live_fake(tmp_path, model, digest, **kwargs):
+    from project_context.behavior.runner import build_schedule, run_suite
+
+    manifest = load_manifest(ROOT / "manifest.json")
+    schedule = build_schedule(manifest, manifest["schedule_seed"], reader="fake")[:1]
+    return run_suite(
+        behavior_root=ROOT,
+        source=BundleSource(SOURCE_RUN, COMPILER_ROOT),
+        adapter=_LiveFake(model, digest),
+        reader_name="primary",
+        temperature=0.0,
+        seed=manifest["decoding"]["seed"],
+        max_tokens=512,
+        schedule=schedule,
+        max_calls=10,
+        run_id="live-fake",
+        timestamp="2026-09-23T00:00:00Z",
+        git_commit="test",
+        vcs_dirty=False,
+        out_root=tmp_path,
+        **kwargs,
+    )
+
+
+def test_live_run_refuses_moving_alias_unless_acknowledged(tmp_path):
+    with pytest.raises(ValueError, match="moving alias"):
+        _run_live_fake(tmp_path, "mistral-small:latest", None)
+    assert not (tmp_path / "compiler-behavior-v1").exists()  # refused before any output
+
+    run_dir = _run_live_fake(tmp_path, "mistral-small:latest", None, allow_moving_model_alias=True)
+    env = dict(json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["environment"])
+    assert env["reader_model_alias_moving"] == "True"
+    assert env["reader_model_digest"] == "unavailable"  # recorded as unavailable, not invented
+    assert env["reader_model_identity_source"] == "unavailable"
+
+
+def test_live_run_records_digest_for_pinned_tag(tmp_path):
+    run_dir = _run_live_fake(tmp_path, "llama3.1:8b", "42182419e950")
+    env = dict(json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["environment"])
+    assert env["reader_model_alias_moving"] == "False"
+    assert env["reader_model_digest"] == "42182419e950"
+    assert env["reader_model_identity_source"] == "ollama-api-tags"
+
+
+def test_offline_fake_run_manifest_unchanged(tmp_path):
+    """The offline fake reader is not a live model; its manifest carries no
+    identity fields (existing manifests keep their exact shape)."""
+    import project_context.behavior.runner as runner
+
+    manifest = load_manifest(ROOT / "manifest.json")
+    schedule = runner.build_schedule(manifest, manifest["schedule_seed"], reader="fake")[:1]
+    run_dir = runner.run_suite(
+        behavior_root=ROOT,
+        source=BundleSource(SOURCE_RUN, COMPILER_ROOT),
+        adapter=FakeReader(rules=[(n, {"ok": t}) for n, t in _RULES.items()]),
+        reader_name="fake",
+        temperature=0.0,
+        seed=1,
+        max_tokens=64,
+        schedule=schedule,
+        max_calls=5,
+        run_id="offline",
+        timestamp="2026-09-23T00:00:00Z",
+        git_commit="test",
+        vcs_dirty=False,
+        out_root=tmp_path,
+    )
+    env = dict(json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["environment"])
+    assert "reader_model_digest" not in env

@@ -293,6 +293,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     beh_run.add_argument("--resume", action="store_true", help="Resume an interrupted run.")
     beh_run.add_argument(
+        "--allow-moving-model-alias",
+        action="store_true",
+        help="Permit a reader model with no tag or ':latest'. The run is recorded as "
+        "non-reproducible from the model name.",
+    )
+    beh_run.add_argument(
         "--transfer",
         action="store_true",
         help="Run the pre-registered transfer wave instead of the primary schedule.",
@@ -797,6 +803,7 @@ def cmd_behavior_run(
     timestamp: str | None,
     resume: bool,
     transfer: bool,
+    allow_moving_model_alias: bool = False,
 ) -> int:
     from project_context.behavior.fixtures import load_behavior_set
     from project_context.behavior.runner import (
@@ -828,23 +835,28 @@ def cmd_behavior_run(
     )
     vcs = vcs_info(Path("."))
     decoding = manifest["decoding"]
-    run_dir = run_suite(
-        behavior_root=BEHAVIOR_ROOT,
-        source=source,
-        adapter=adapter,
-        reader_name=reader,
-        temperature=float(decoding["temperature"]),
-        seed=int(decoding["seed"]),
-        max_tokens=int(decoding["max_tokens"]),
-        schedule=schedule,
-        max_calls=max_calls,
-        run_id=resolved_run_id,
-        timestamp=moment,
-        git_commit=str(vcs.get("commit") or "unknown"),
-        vcs_dirty=bool(vcs.get("dirty")),
-        out_root=Path(runs_dir),
-        resume=resume,
-    )
+    try:
+        run_dir = run_suite(
+            behavior_root=BEHAVIOR_ROOT,
+            source=source,
+            adapter=adapter,
+            reader_name=reader,
+            temperature=float(decoding["temperature"]),
+            seed=int(decoding["seed"]),
+            max_tokens=int(decoding["max_tokens"]),
+            schedule=schedule,
+            max_calls=max_calls,
+            run_id=resolved_run_id,
+            timestamp=moment,
+            git_commit=str(vcs.get("commit") or "unknown"),
+            vcs_dirty=bool(vcs.get("dirty")),
+            out_root=Path(runs_dir),
+            resume=resume,
+            allow_moving_model_alias=allow_moving_model_alias,
+        )
+    except ValueError as exc:
+        print(f"refused: {exc}", file=sys.stderr)
+        return 2
     print(f"frozen behavior run at {run_dir} [SYNTHETIC FIXTURES + LIVE READER]")
     return 0
 
@@ -1407,6 +1419,7 @@ def main(argv: list[str] | None = None) -> int:
             args.timestamp,
             args.resume,
             args.transfer,
+            args.allow_moving_model_alias,
         )
     if args.command == "behavior" and args.behavior_command == "validate-run":
         return cmd_behavior_validate_run(args.run_dir)

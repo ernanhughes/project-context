@@ -26,6 +26,14 @@ from project_context.telemetry import TokenCount, TokenSource
 Transport = Callable[[str, str, dict[str, str], bytes], tuple[int, bytes]]
 
 
+def is_moving_alias(model: str) -> bool:
+    """True when a model name is a moving alias: no tag, or the `latest`
+    tag. Such a name can resolve to different weights on different days,
+    so a run made under it is not reproducible from the name alone."""
+    _, sep, tag = model.partition(":")
+    return not sep or tag == "latest"
+
+
 def urllib_transport(
     method: str, url: str, headers: dict[str, str], body: bytes, timeout: int = 120
 ) -> tuple[int, bytes]:
@@ -66,6 +74,7 @@ class OpenAIChatAdapter:
         transport: Transport | None = None,
     ) -> None:
         self._config = config
+        self._identity: dict[str, str | None] | None = None
         self._transport = transport or (
             lambda method, url, headers, body: urllib_transport(
                 method, url, headers, body, timeout=config.timeout_seconds
@@ -80,7 +89,43 @@ class OpenAIChatAdapter:
         info = self._config.redacted()
         info["adapter"] = self.name
         info["live"] = True
+        info["model_alias_moving"] = is_moving_alias(self._config.model)
+        if self._identity is not None:
+            info.update(self._identity)
         return info
+
+    def resolve_identity(self) -> dict[str, str | None]:
+        """Best-effort stable identity of the served model.
+
+        Asks the local Ollama native API (`/api/tags`, the endpoint root
+        without the OpenAI-compatible `/v1` suffix) for the digest of the
+        exact configured model name. Nothing is inferred: when the
+        endpoint does not answer or does not list the model, the digest
+        stays None with source "unavailable". A digest identifies the
+        weights actually served; the model name alone does not.
+        """
+        digest: str | None = None
+        source = "unavailable"
+        root = self._config.base_url.rstrip("/")
+        if root.endswith("/v1"):
+            root = root[: -len("/v1")]
+        try:
+            status, payload = self._transport("GET", root + "/api/tags", self._headers(), b"")
+            if status == 200:
+                listed = json.loads(payload.decode("utf-8")).get("models", [])
+                for entry in listed if isinstance(listed, list) else []:
+                    if not isinstance(entry, dict):
+                        continue
+                    if self._config.model in (entry.get("name"), entry.get("model")):
+                        raw = entry.get("digest")
+                        if isinstance(raw, str) and raw:
+                            digest = raw
+                            source = "ollama-api-tags"
+                        break
+        except (OSError, TimeoutError, ValueError, AttributeError):
+            pass
+        self._identity = {"model_digest": digest, "model_identity_source": source}
+        return dict(self._identity)
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -161,12 +206,17 @@ class OpenAIChatAdapter:
             raw_text=text,
             provider="openai-compatible",
             model=str(data.get("model", self._config.model)),
-            model_version=None,
+            model_version=self._model_version(),
             latency_ms=latency_ms,
             input_tokens=count("prompt_tokens"),
             output_tokens=count("completion_tokens"),
             reasoning_tokens=count("reasoning_tokens", "completion_tokens_details"),
         )
+
+    def _model_version(self) -> str | None:
+        if self._identity and self._identity.get("model_digest"):
+            return "digest:" + str(self._identity["model_digest"])
+        return None
 
 
 def _join_blocks(blocks: Any) -> str:
