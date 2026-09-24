@@ -485,6 +485,16 @@ def build_parser() -> argparse.ArgumentParser:
     demo_runtime.add_argument(
         "--format", choices=("text", "json"), default="text", help="Report format."
     )
+    leverage = sub.add_parser("leverage", help="Oracle-leverage live-wave harness.")
+    leverage_sub = leverage.add_subparsers(dest="leverage_command", required=True)
+    leverage_sub.add_parser("preflight", help="Verify all frozen identities; zero model calls.")
+    exec_leverage = leverage_sub.add_parser("execute", help="Run the frozen 24-slot wave.")
+    exec_leverage.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Explicit execution intent; required to make model calls.",
+    )
+    exec_leverage.add_argument("--wave-dir", default="", help="Wave output directory.")
     return parser
 
 
@@ -1575,6 +1585,57 @@ def cmd_runtime_demo(case: str, output_format: str) -> int:
     return 0
 
 
+def cmd_leverage_preflight() -> int:
+    from project_context.leverage.run import preflight
+
+    report = preflight()
+    checks = report["checks"]
+    assert isinstance(checks, dict)
+    for name in (
+        "freeze_identities",
+        "model_metadata_identity",
+        "schedule_slots",
+        "grader_registry",
+        "payload_binding",
+        "hidden_truth_isolation",
+        "runtime_wiring",
+        "overall",
+    ):
+        print(f"{name}: {checks.get(name)}")
+    print(f"subject-model calls: {report['subject_model_calls']}")
+    print(f"fixture-probing calls: {report['fixture_probing_calls']}")
+    return 0 if checks.get("overall") == "PASS" else 1
+
+
+def cmd_leverage_execute(confirm: bool, wave_dir: str) -> int:
+    from project_context.leverage.run import (
+        load_schedule,
+        production_executor,
+        run_wave,
+    )
+
+    if not confirm:
+        print("leverage execute requires --confirm (explicit execution intent).", file=sys.stderr)
+        return 2
+    schedule = load_schedule()
+    target = Path(wave_dir) if wave_dir else Path(".local") / "waves" / "olv1-wave-001"
+    try:
+        artifact = run_wave(
+            schedule,
+            Path("fixtures") / "oracle-leverage-v1",
+            target,
+            production_executor,
+            schedule["subject_model"].get("expected_digest"),
+        )
+    except Exception as exc:
+        print(f"leverage wave stopped: {exc}", file=sys.stderr)
+        return 1
+    (target / "result.json").write_text(json.dumps(artifact, indent=2), encoding="utf-8")
+    print(f"runs: {artifact['run_count']} hard_stop: {artifact.get('hard_stop')}")
+    print(f"result: {target / 'result.json'}")
+    return 0
+
+
 def _utcnow() -> str:
     from datetime import datetime, timezone
 
@@ -2102,6 +2163,10 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_ledger_candidates(args.case, args.request_file, args.compile, args.format)
     if args.command == "runtime" and args.runtime_command == "demo":
         return cmd_runtime_demo(args.case, args.format)
+    if args.command == "leverage" and args.leverage_command == "preflight":
+        return cmd_leverage_preflight()
+    if args.command == "leverage" and args.leverage_command == "execute":
+        return cmd_leverage_execute(args.confirm, args.wave_dir)
     return 2
 
 

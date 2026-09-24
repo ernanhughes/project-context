@@ -1,0 +1,20 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "freeze_status": "PRE-RUN FROZEN",
+  "spec": "experiments/oracle-leverage-v1/spec.md",
+  "fixture_freeze_commit": "b2bafcc",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "model_config_digest": "3c07edc1e9d0fe0e16a2247b6ab0326b7f8b728258d522270e21ce5bd57ff00c",
+  "grader_version": "leverage-grader-v1",
+  "grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "runner_version": "leverage-runner-v1",
+  "runner_digest": "cd5ec4f821b6d6fb030547e240b6df45077401047b526effc7b04efc7f76a3fe",
+  "records_digest": "aa82f722f79fac6655ed3768c1c437e963ac5520df094c48da2ba58c0dbcd7c4",
+  "result_schema": "project_context.leverage_result.v1",
+  "cli": "contextlab leverage preflight|execute --confirm",
+  "experimental_calls": {
+    "subject_model": 0,
+    "fixture_probing": 0
+  }
+}
