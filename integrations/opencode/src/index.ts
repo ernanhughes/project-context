@@ -35,6 +35,7 @@ import {
   newCaptureId,
   nowIso,
 } from "./capture.ts";
+import { SequenceStore } from "./sequence.ts";
 import type { ModelLimits, ModelRef, RequestKind } from "./schema.ts";
 
 type Env = Record<string, string | undefined>;
@@ -49,12 +50,20 @@ type SessionContextEvent = {
   options: Record<string, unknown>;
 };
 
+type ModelInfo = {
+  id?: string;
+  modelID?: string;
+  providerID?: string;
+  limit?: { context?: number; input?: number; output?: number };
+};
+type ModelList = { data?: ModelInfo[] } | ModelInfo[];
+
 type PluginContext = {
   app: { version: string };
   model: {
-    get: (input: { providerID: string; modelID: string }) => Promise<{
-      limit?: { context?: number; output?: number };
-    } | null>;
+    // OpenCode 2.0.16 has no `get`. `list` returns `{ location, data: [...] }`, one entry
+    // per known model, each with `providerID`, `modelID` and a `limit` where known.
+    list: () => Promise<ModelList>;
   };
   session: {
     hook: (
@@ -63,14 +72,6 @@ type PluginContext = {
     ) => Promise<{ dispose: () => Promise<void> }>;
   };
 };
-
-const sequences = new Map<string, number>();
-
-function nextSequence(sessionID: string): number {
-  const next = (sequences.get(sessionID) ?? 0) + 1;
-  sequences.set(sessionID, next);
-  return next;
-}
 
 function toModelRef(raw: unknown): ModelRef | null {
   if (typeof raw !== "object" || raw === null) return null;
@@ -91,17 +92,26 @@ async function readModelLimits(
   model: { providerID: string; id: string },
 ): Promise<ModelLimits | null> {
   try {
-    const info = await ctx.model.get({
-      providerID: model.providerID,
-      modelID: model.id,
-    });
+    const listed = await ctx.model.list();
+    const rows = Array.isArray(listed) ? listed : (listed?.data ?? []);
+    const info = rows.find(
+      (m) =>
+        m.providerID === model.providerID && (m.modelID ?? m.id) === model.id,
+    );
     const context = info?.limit?.context;
+    const input = info?.limit?.input;
     const output = info?.limit?.output;
-    if (typeof context !== "number" && typeof output !== "number") return null;
+    if (
+      typeof context !== "number" &&
+      typeof input !== "number" &&
+      typeof output !== "number"
+    )
+      return null;
     return {
       context: typeof context === "number" ? context : null,
+      input: typeof input === "number" ? input : null,
       output: typeof output === "number" ? output : null,
-      source: "ctx.model",
+      source: "ctx.model.list",
     };
   } catch {
     // Model metadata unavailable at capture time: UNAVAILABLE is
@@ -117,6 +127,10 @@ export default Plugin.define({
     assertSupportedVersion(pluginCtx.app.version);
     const env = process.env as Env;
     if (!captureEnabled(env)) return;
+
+    // Sequence numbers survive a harness restart (see sequence.ts). Reserved before the
+    // record is appended, so a crash leaves a detectable gap and never a reused number.
+    const sequences = new SequenceStore(defaultSpoolDir(env));
 
     const capture = async (kind: RequestKind, event: SessionContextEvent) => {
       // READ-ONLY: copy blocks out first; the event is never written.
@@ -139,7 +153,7 @@ export default Plugin.define({
       const record = buildRecord({
         request_kind: kind,
         session_id: sessionID,
-        invocation_sequence: nextSequence(sessionID ?? "unlinked"),
+        invocation_sequence: sequences.next(sessionID).sequence,
         agent: typeof event.agent === "string" ? event.agent : null,
         model,
         model_limits: limits,

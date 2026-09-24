@@ -46,14 +46,30 @@ function tmpSpool(): string {
 
 type HookFn = (event: Record<string, unknown>) => Promise<void> | void;
 
-function fakeContext(spool: string) {
+type ListedModel = {
+  id: string;
+  modelID: string;
+  providerID: string;
+  limit?: { context?: number; input?: number; output?: number };
+};
+
+// Mirrors the real 2.0.16 context: `ctx.model.list()` returns `{ location, data }`, and there
+// is no `ctx.model.get`. (An earlier version of this fake had `get`, which does not exist.)
+function fakeContext(
+  spool: string,
+  models: ListedModel[] = [],
+  listFails = false,
+) {
   const hooks = new Map<string, HookFn>();
   return {
     hooks,
     ctx: {
       app: { version: "2.0.16" },
       model: {
-        get: async () => null,
+        list: async () => {
+          if (listFails) throw new Error("model registry unavailable");
+          return { location: { directory: spool }, data: models };
+        },
       },
       session: {
         hook: async (name: string, callback: HookFn) => {
@@ -105,10 +121,39 @@ function sampleEvent() {
     agent: "build",
     model: { providerID: "p", id: "m" },
     system: [{ type: "text", text: "alpha" }],
+    // The real 2.0.16 shape: role plus a content list. Tool calls and results are parts.
     messages: [
       {
-        info: { id: "m1", role: "user" },
-        parts: [{ id: "p1", type: "text", text: "first" }],
+        id: "m1",
+        role: "user",
+        content: [{ type: "text", text: "first" }],
+        metadata: {},
+      },
+      {
+        id: "m2",
+        role: "assistant",
+        content: [
+          { type: "reasoning", text: "thinking", providerMetadata: {} },
+          {
+            type: "tool-call",
+            id: "call-1",
+            name: "read",
+            input: { path: "a.txt" },
+            providerExecuted: false,
+          },
+        ],
+      },
+      {
+        role: "tool",
+        content: [
+          {
+            type: "tool-result",
+            id: "call-1",
+            name: "read",
+            result: { type: "text", value: "contents" },
+            providerExecuted: false,
+          },
+        ],
       },
     ],
     tools: {
@@ -360,4 +405,89 @@ test("appendRecord fails loudly on bad paths", async () => {
   }
   ok(threw, "spool failure must throw, not silently drop evidence");
   rmSync(base, { recursive: true, force: true });
+});
+
+test("model limits come from ctx.model.list, including the input limit", async () => {
+  const spool = tmpSpool();
+  const { hooks, ctx } = fakeContext(spool, [
+    {
+      id: "other",
+      modelID: "other",
+      providerID: "p",
+      limit: { context: 1, output: 1 },
+    },
+    {
+      id: "m",
+      modelID: "m",
+      providerID: "p",
+      limit: { context: 1050000, input: 922000, output: 128000 },
+    },
+  ]);
+  await withEnv(spool, async () => {
+    await plugin.setup(ctx as never);
+    await hooks.get("context")!(sampleEvent());
+  });
+  const day = new Date().toISOString().slice(0, 10);
+  const record = JSON.parse(
+    readFileSync(join(spool, day, "captures.jsonl"), "utf-8").trim(),
+  );
+  deepEqual(record.model_limits, {
+    context: 1050000,
+    input: 922000,
+    output: 128000,
+    source: "ctx.model.list",
+  });
+  rmSync(spool, { recursive: true, force: true });
+});
+
+test("an unknown model, or a failing registry, leaves the limit unobserved", async () => {
+  for (const [models, fails] of [
+    [[], false],
+    [
+      [
+        {
+          id: "zzz",
+          modelID: "zzz",
+          providerID: "p",
+          limit: { context: 5 },
+        },
+      ],
+      false,
+    ],
+    [[], true],
+  ] as const) {
+    const spool = tmpSpool();
+    const { hooks, ctx } = fakeContext(spool, [...models], fails);
+    await withEnv(spool, async () => {
+      await plugin.setup(ctx as never);
+      await hooks.get("context")!(sampleEvent());
+    });
+    const day = new Date().toISOString().slice(0, 10);
+    const record = JSON.parse(
+      readFileSync(join(spool, day, "captures.jsonl"), "utf-8").trim(),
+    );
+    equal(record.model_limits, null);
+    equal(record.invocation_sequence, 1); // capture still happened
+    rmSync(spool, { recursive: true, force: true });
+  }
+});
+
+test("a restarted plugin continues the session's sequence instead of restarting at 1", async () => {
+  const spool = tmpSpool();
+  const numbers: number[] = [];
+  for (let process_ = 0; process_ < 3; process_++) {
+    const { hooks, ctx } = fakeContext(spool); // a fresh plugin instance, as after a restart
+    await withEnv(spool, async () => {
+      await plugin.setup(ctx as never);
+      await hooks.get("context")!(sampleEvent());
+      await hooks.get("context")!(sampleEvent());
+    });
+  }
+  const day = new Date().toISOString().slice(0, 10);
+  for (const line of readFileSync(join(spool, day, "captures.jsonl"), "utf-8")
+    .trim()
+    .split("\n"))
+    numbers.push(JSON.parse(line).invocation_sequence);
+  deepEqual(numbers, [1, 2, 3, 4, 5, 6]);
+  rmSync(spool, { recursive: true, force: true });
 });

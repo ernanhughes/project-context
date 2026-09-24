@@ -13,8 +13,8 @@ Rules that keep the assignment honest:
   Absence is recorded, not repaired.
 * A stratum nobody met is reported as *naturally absent*, with the number of sessions that
   were observed while it was absent.
-* Where the capture cannot see the thing a definition needs, the criterion is a PROXY and
-  the label says so in `basis`.
+* Where a definition rests on something inferred rather than read directly, the label says
+  so in `basis` (derived from call arguments, or declared by the author).
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from project_context.corpus.completeness import PROXY
+from project_context.corpus.completeness import DERIVED
 
 STRATA = {
     "S1": "short question",
@@ -64,16 +64,16 @@ def satisfied_strata(
     declared = declared or {}
     n = session["primary_requests"]
     edits = session["distinct_edit_targets"]
-    edit_calls = session["edit_result_count"]
+    edit_calls = session["edit_call_count"]
     met: dict[str, str] = {}
     if n <= S1_MAX_REQUESTS and edit_calls == 0:
         met["S1"] = "observed"
     if edits == 1 and n <= S2_MAX_REQUESTS:
-        met["S2"] = PROXY.lower()  # "files edited" is inferred from distinct edit-result titles
+        met["S2"] = DERIVED.lower()  # distinct paths in edit-tool call arguments
     if edits >= S3_MIN_FILES:
-        met["S3"] = PROXY.lower()
-    if session["test_command_result_count"] >= S4_MIN_TEST_CALLS:
-        met["S4"] = PROXY.lower()  # test runs are recognised from the command title
+        met["S3"] = DERIVED.lower()
+    if session["test_command_call_count"] >= S4_MIN_TEST_CALLS:
+        met["S4"] = DERIVED.lower()  # shell-tool calls whose command is a test runner
     share = session["last_request_tool_result_share"]
     if isinstance(share, float) and share > S5_TOOL_SHARE:
         met["S5"] = "observed"
@@ -82,7 +82,7 @@ def satisfied_strata(
     if declared.get("project_instructions") is True:
         met["S7"] = "declared"
     if session["identities_with_differing_bytes"] > 0:
-        met["S8"] = PROXY.lower()
+        met["S8"] = DERIVED.lower()  # one call identity, results that differ in bytes
     return met
 
 

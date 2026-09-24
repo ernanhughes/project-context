@@ -120,6 +120,33 @@ compiler insertion into live context, TUI, semantic duplicate
 detection, behavioural utility inference, provider-wire capture. The
 debugger observes; it changes nothing. See `docs/stage-5-report.md`.
 
+## Stage 6A scope (current)
+
+Deterministic Context Ledger: typed durable state with lifecycle,
+provenance, contradiction/supersession relationships, and
+append-only history (F4B design). Implemented:
+
+- `src/project_context/ledger/`: frozen `LedgerItem`/`LedgerEvent`
+  records with schema versions and strict JSON round-trips, explicit
+  lifecycle transitions (terminal states never silently reopen),
+  verification recording (never performing), typed relationships,
+  boring JSONL store, and pure `project(events) -> LedgerState`
+  projection with explainable lineage and a replay digest;
+- `fixtures/ledger-v1/` (SYNTHETIC): 13 items over 24 events covering
+  obligations, a user constraint, decision supersession, failed
+  verification, an unresolved failure, dependency satisfaction,
+  irrelevant-but-valid state, expiry, and contradiction; expected
+  state in `ledger-v1.truth.json` (tests only, never runtime);
+- `contextlab ledger inspect|history|validate|replay` CLI;
+- `tests/test_ledger.py` (31 tests) pinning determinism, lifecycle
+  legality, provenance, hidden-truth separation, and the compiler /
+  OpenCode boundaries.
+
+Explicitly **not implemented**: activation, retrieval, compiler
+admission, live injection, automatic extraction, model calls. The
+ledger persists state; it admits nothing to context. Live stores live
+under `.local/ledger/` (git-ignored). See `docs/stage-6a-report.md`.
+
 ## Evidence manifests
 
 Runs the book cites are published byte for byte under `evidence/runs/` and

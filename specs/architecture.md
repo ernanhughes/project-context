@@ -162,3 +162,38 @@ redundant is not claimed. Large is measurable; harmful is not claimed.
 Options are observed overrides, never complete effective provider
 configuration. Tool-definition exposure is availability, never
 utility. The debugger makes zero model calls.
+
+## Stage 6A — Context Ledger (typed durable state, no admission)
+
+`src/project_context/ledger/` implements the state substrate for the
+F4B design (`experiments/designs/F4B-stateful-context-ledger.md`): an
+append-only event stream (`LedgerEvent`) folding deterministically into
+current state (`LedgerState` via `project(events)`).
+
+```text
+explicit structured state
+        ↓  append-only events (JSONL, schema-versioned)
+deterministic projection (no clock, no model, no network)
+        ↓
+LedgerState: items + lifecycle + verification + relationships + lineage
+```
+
+Records: `LedgerItem` (kind, statement, authority, scope, provenance)
+with kinds `obligation | constraint | decision | assumption |
+unresolved_failure | dependency | pending_verification | result`.
+Lifecycle (`active | blocked | satisfied | failed | superseded |
+cancelled | expired | contradicted`) is separate from verification
+(`unverified | verified | contradicted`); authority maps to the
+governance channels rather than duplicating them. Relationships
+(`depends_on | blocks | supersedes | contradicts | verifies |
+derived_from`) reference stable IDs; `supersedes` and `contradicts`
+apply deterministic transitions, the rest are recorded lineage.
+A satisfied or verified dependency unblocks a blocked dependent; nothing
+is ever executed. Committed fixtures: `fixtures/ledger-v1/` (synthetic,
+expected state in `ledger-v1.truth.json`, tests only). Live stores
+default to `.local/ledger/` (git-ignored).
+
+Explicitly not here: activation, retrieval, compiler admission, OpenCode
+mutation, extraction, model calls. The ledger cannot admit anything to
+context; a future activator will turn eligible state into ordinary
+`ContextCandidate[]` for the existing compiler.

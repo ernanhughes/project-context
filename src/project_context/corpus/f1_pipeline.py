@@ -20,7 +20,12 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from project_context.corpus import ledger as ledger_mod
-from project_context.corpus.completeness import UNOBSERVED, Completeness, assess_session
+from project_context.corpus.completeness import (
+    UNOBSERVED,
+    Completeness,
+    assess_session,
+    split_control,
+)
 from project_context.corpus.f1_analysis import analyse_session, dumps, reconcile
 from project_context.corpus.ledger import Entry, Ledger, campaign_week, validate_sidecar
 from project_context.corpus.privacy import GateResult, ScanReport, gate, scan_raw
@@ -77,18 +82,28 @@ def process_session(
     skipped_lines: int = 0,
     sensitive_terms: tuple[str, ...] = (),
     force_derivative: bool = False,
+    refuse_session_ids: frozenset[str] = frozenset(),
 ) -> Outcome:
     """Run one captured session through every stage and record it.
+
+    `refuse_session_ids` is the calibration registry: a session listed there is a deliberate
+    tool-testing session, and is refused whatever key it is offered under.
 
     `force_derivative` builds and gates the derivative even for a session the scan excluded.
     It exists for the privacy dry run, which must show that the derivative is clean whether or
     not the scanner noticed anything. It never changes what the ledger records.
     """
+    listed = {r.get("session_id") for r in records} & set(refuse_session_ids)
+    if listed:
+        raise ledger_mod.LedgerError(
+            "session is on the calibration registry and cannot enter this ledger"
+        )
     problems = validate_sidecar(sidecar)
     if problems:
         raise ledger_mod.LedgerError(f"sidecar rejected: {problems}")
 
     completeness = assess_session(records, skipped_lines)
+    records, _control = split_control(records)  # control records mark ordering, never analysed
     captured = min((str(r.get("captured_at", "")) for r in records), default="")
 
     def record(
@@ -125,9 +140,7 @@ def process_session(
             shape_cards=sorted({c.shape for c in outcome.cards}),
             excluded=outcome.excluded,
             exclusion_reason=outcome.exclusion_reason,
-            evidence_class=ledger_mod.ECOLOGICAL
-            if not session_key.startswith(ledger_mod.SYNTHETIC_MARKERS)
-            else "synthetic",
+            evidence_class=ledger_mod.session_class(session_key, ledger_mod.ECOLOGICAL),
             link={"raw": _digest(records), "derivative": _digest(l1)} if outcome.l1 else {},
         )
         outcome.ledger_ordinal = ledger.add(entry).ordinal

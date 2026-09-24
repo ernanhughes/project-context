@@ -1,0 +1,1 @@
+{"event_count": 24, "events": "events.jsonl", "evidence_class": "synthetic", "fixture_version": "1", "fixtures": ["ledger-v1"], "item_count": 13, "note": "Stage 6A ledger fixture: one append-only event stream; expected state in ledger-v1.truth.json (tests only, never runtime)."}

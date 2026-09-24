@@ -19,14 +19,17 @@ from project_context.corpus.shapecards import SHAPES, catalogue, derive_cards, v
 from project_context.corpus.synthetic import (
     PLANTED,
     SCANNER_BLIND_SPOT,
-    Msg,
+    A,
     Req,
+    U,
     build_session,
+    edit_session,
     growth_session,
     long_session,
     no_tools_session,
     privacy_session,
     rewrite_session,
+    repeated_test_run_session,
 )
 
 PLANTED_TOKEN_MIN = 8
@@ -48,15 +51,7 @@ def summary(records, declared=None):
 
 
 def edits(n_files, requests=6):
-    history = [Msg("user", "u" * 20)]
-    reqs = []
-    for i in range(requests):
-        reqs.append(Req(list(history)))
-        if i < n_files:
-            history.append(Msg("tool", tool="edit", call=f"c{i}", title=f"file{i}.py", body="ok"))
-        else:
-            history.append(Msg("assistant", "a" * 20))
-    return build_session("synthetic-edits", reqs)
+    return edit_session(n_files, requests)
 
 
 def test_primary_stratum_is_a_function_of_the_session_alone():
@@ -75,27 +70,24 @@ def test_each_stratum_definition():
     assert "S6" in strata.assign(summary(rewrite_session())).satisfied  # compaction observed
 
 
-def test_test_loop_stratum_from_command_titles():
-    history, reqs = [Msg("user", "u")], []
-    for i in range(3):
-        reqs.append(Req(list(history), tools={}))
-        history.append(
-            Msg("tool", tool="bash", call=f"c{i}", title="pytest -q", body="ok " + "." * i)
-        )
-    reqs.append(Req(list(history)))
-    assert strata.assign(summary(build_session("synthetic-tests", reqs))).satisfied.count("S4") == 1
+def test_test_loop_stratum_from_shell_commands():
+    a = strata.assign(summary(repeated_test_run_session(3)))
+    assert a.satisfied.count("S4") == 1 and a.basis["S4"] == "derived"
+    assert "S4" not in strata.assign(summary(repeated_test_run_session(2))).satisfied
 
 
 def test_tags_are_secondary_and_declared_or_proxy_bases_are_recorded():
     declared = {"project_instructions": True}
     a = strata.assign(summary(growth_session()[0], declared), declared)
     assert a.primary == "S5" and "S7" in a.tags and "S8" in a.tags
-    assert a.basis["S7"] == "declared" and a.basis["S8"] == "proxy" and a.basis["S5"] == "observed"
+    assert (
+        a.basis["S7"] == "declared" and a.basis["S8"] == "derived" and a.basis["S5"] == "observed"
+    )
     assert "S7" not in strata.PRIMARY_PRECEDENCE and "S8" not in strata.PRIMARY_PRECEDENCE
 
 
 def test_a_session_that_fits_nothing_is_kept_unclassified_not_forced():
-    reqs = [Req([Msg("user", "u" * 20)] + [Msg("assistant", "a" * 20)] * i) for i in range(8)]
+    reqs = [Req([U("u" * 20)] + [A("a" * 20)] * i) for i in range(8)]
     a = strata.assign(summary(build_session("synthetic-none", reqs)))
     assert a.primary == strata.UNCLASSIFIED and a.satisfied == ()
 
@@ -123,8 +115,8 @@ def test_shape_cards_of_the_growth_session():
         "large_recoverable_artifact",
     } <= set(by_shape)
     material = by_shape["repeated_file_material"]
-    assert material.magnitude["bytes"] == 529 and material.requests_showing == 2
-    assert material.recreate == {"parts": 2, "part_bytes": 529, "repeats": 1}
+    assert material.magnitude["bytes"] == 500 and material.requests_showing == 2
+    assert material.recreate == {"parts": 2, "part_bytes": 500, "repeats": 1}
     assert "repeated_tool_output" not in by_shape  # the repeated output was from a file read
 
 
@@ -178,11 +170,20 @@ def sess(**over):
     base = {
         "first_request_tool_definition_share": 0.2,
         "last_request_redundant_payload_share": 0.2,
-        "window_fraction_max": 0.1,
+        "window_fraction_max_measured": 0.1,
+        "window_fraction_max_bytes_estimate": 0.1,
+        "window_fraction_max_word_estimate": 0.07,
         "compaction_records": 0,
         "prefix_fraction_median": 0.8,
     }
     return {**base, **over}
+
+
+WINDOW_KEYS = (
+    "window_fraction_max_measured",
+    "window_fraction_max_bytes_estimate",
+    "window_fraction_max_word_estimate",
+)
 
 
 def by_name(records):
@@ -245,7 +246,7 @@ def test_duplicate_and_prefix_triggers_look_only_at_long_sessions():
 
 def test_window_trigger_needs_two_sessions_or_a_compaction():
     def status(*fractions, compaction=0):
-        sessions = [sess(window_fraction_max=f) for f in fractions]
+        sessions = [sess(**{k: f for k in WINDOW_KEYS}) for f in fractions]
         if compaction:
             sessions[0]["compaction_records"] = compaction
         return by_name(routing.evaluate(sessions, [False] * len(sessions)))["T3_externalise_recall"]

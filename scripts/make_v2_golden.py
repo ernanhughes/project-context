@@ -8,7 +8,7 @@ from pathlib import Path
 
 OPENCODE_VERSION = "2.0.16"
 PLUGIN_API_VERSION = "@opencode/plugin 2.0.16"
-ADAPTER_VERSION = "0.2.0"
+ADAPTER_VERSION = "0.3.0"
 SCHEMA = "project_context.opencode_capture.v2"
 STAGE = "opencode.v2.model_context"
 

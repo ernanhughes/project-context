@@ -41,17 +41,17 @@ SHAPES: dict[str, tuple[str, str]] = {
         "the stable prefix breaks early in the request in many consecutive pairs",
     ),
     "stale_observation_surviving": (
-        PROXY,
-        "the same tool and title returned different bytes and both remain in one request",
+        DERIVED,
+        "one call (tool and arguments) returned different bytes and both results remain in "
+        "one request; a re-run whose state changed also qualifies",
     ),
     "repeated_re_read": (
-        PROXY,
-        "the same tool and title called several times, whether or not the bytes matched",
+        DERIVED,
+        "the same call (tool and arguments) made several times, whether or not the bytes matched",
     ),
     "large_recoverable_artifact": (
-        PROXY,
-        "a single tool result is a large share of a request and has a tool and title that "
-        "identify it",
+        DERIVED,
+        "a single tool result is a large share of a request, and its call could be made again",
     ),
     "compaction_or_rewrite_event": (
         OBSERVED,
@@ -222,7 +222,7 @@ def derive_cards(l1: dict[str, Any]) -> list[Card]:
     growth = last["bytes"] - first["bytes"]
     history = sum(
         last["bytes_by_category"].get(c, 0) - first["bytes_by_category"].get(c, 0)
-        for c in ("user", "assistant")
+        for c in ("user", "assistant", "reasoning")
     )
     if growth > 0 and history / growth >= HISTORY_GROWTH_SHARE:
         card(

@@ -2,7 +2,7 @@
 
 Active contract only: ``project_context.opencode_capture.v2`` at
 ``opencode.v2.model_context`` (OpenCode 2.0.16, V2 plugin API,
-``@opencode/plugin`` 2.0.16, adapter 0.2.0). V1 records are retired and
+``@opencode/plugin`` 2.0.16, adapter 0.3.0). V1 records are retired and
 must be rejected, never coerced.
 """
 
@@ -35,7 +35,7 @@ GOLDEN = (
 
 OPENCODE_VERSION = "2.0.16"
 PLUGIN_API_VERSION = "@opencode/plugin 2.0.16"
-ADAPTER_VERSION = "0.2.0"
+ADAPTER_VERSION = "0.3.0"
 
 
 def _golden_doc():

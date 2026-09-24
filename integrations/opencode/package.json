@@ -1,6 +1,6 @@
 {
   "name": "@project-context/opencode-capture",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Read-only OpenCode V2 capture adapter for Context Lab. Observes assembled model-request context without mutating it.",
   "type": "module",
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/capture.test.ts",
+    "test": "node --test tests/capture.test.ts tests/sequence.test.ts",
     "lint": "prettier --check .",
     "format": "prettier --write ."
   },

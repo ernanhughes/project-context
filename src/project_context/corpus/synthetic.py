@@ -8,12 +8,18 @@ Every session built here carries the reserved identifier prefix ``synthetic-`` o
 * **the privacy session**, a fake session with planted material of every kind the privacy
   pipeline exists to stop, used to test the pipeline and nothing else.
 
+The record shape is the one OpenCode 2.0.16 really produces (see `specs/f1-calibration.md`),
+not the shape the first version of these builders assumed: messages are `{role, content}` and a
+part is `text`, `reasoning`, `tool-call` or `tool-result`. Structure only is copied from the
+calibration run; none of its content is.
+
 The ground truth for a measurement session is the list of part texts the builder wrote, so
 the expected values are derived from what was constructed, not from the analyser.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -28,29 +34,45 @@ def definition(name: str, description: str) -> dict[str, Any]:
 
 
 def definition_text(name: str, description: str) -> str:
-    """The rendered text of a tool definition, written out by hand (not via the ingester)."""
+    """The rendered text of a tool definition, written out by hand (not via the analyser)."""
     return '{"description": "' + description + '", "input": {}, "tool": "' + name + '"}'
-
-
-def tool_text(tool: str, call: str, title: str, body: str) -> str:
-    return f"[tool:{tool} call:{call} title:{title}]\n{body}"
 
 
 @dataclass
 class Msg:
-    role: str  # user | assistant | tool
+    """One part of a message. `kind` is user, assistant, reasoning, call or result."""
+
+    kind: str
     text: str = ""
+    call_id: str = ""
     tool: str = ""
-    call: str = ""
-    title: str = ""
-    body: str = ""
+    args: dict[str, Any] = field(default_factory=dict)
 
     def rendered(self) -> str:
-        return (
-            tool_text(self.tool, self.call, self.title, self.body)
-            if self.role == "tool"
-            else self.text
-        )
+        """The text this part contributes, written by hand rather than by the analyser."""
+        if self.kind == "call":
+            return f"{self.tool} {json.dumps(self.args, sort_keys=True)}"
+        return self.text
+
+
+def U(text: str) -> Msg:
+    return Msg("user", text)
+
+
+def A(text: str) -> Msg:
+    return Msg("assistant", text)
+
+
+def Think(text: str) -> Msg:
+    return Msg("reasoning", text)
+
+
+def Call(call_id: str, tool: str, **args: Any) -> Msg:
+    return Msg("call", call_id=call_id, tool=tool, args=args)
+
+
+def Result(call_id: str, tool: str, value: str) -> Msg:
+    return Msg("result", value, call_id=call_id, tool=tool)
 
 
 @dataclass
@@ -59,34 +81,51 @@ class Req:
     system: list[str] = field(default_factory=lambda: ["S" * 100])
     tools: dict[str, str] = field(default_factory=dict)  # name -> description
     kind: str = "context"
-    window: int | None = None
+    limits: dict[str, int] | None = None
 
 
-def _message(session: str, n: int, msg: Msg) -> dict[str, Any]:
-    info = {
-        "id": f"m{n}",
-        "sessionID": session,
-        "role": "assistant" if msg.role == "tool" else msg.role,
+def _message(n: int, msg: Msg) -> dict[str, Any]:
+    if msg.kind == "user":
+        return {
+            "id": f"m{n}",
+            "role": "user",
+            "content": [{"type": "text", "text": msg.text}],
+            "metadata": {},
+        }
+    if msg.kind == "assistant":
+        return {"id": f"m{n}", "role": "assistant", "content": [{"type": "text", "text": msg.text}]}
+    if msg.kind == "reasoning":
+        return {
+            "id": f"m{n}",
+            "role": "assistant",
+            "content": [{"type": "reasoning", "text": msg.text, "providerMetadata": {}}],
+        }
+    if msg.kind == "call":
+        return {
+            "id": f"m{n}",
+            "role": "assistant",
+            "content": [
+                {
+                    "type": "tool-call",
+                    "id": msg.call_id,
+                    "name": msg.tool,
+                    "input": msg.args,
+                    "providerExecuted": False,
+                }
+            ],
+        }
+    return {
+        "role": "tool",
+        "content": [
+            {
+                "type": "tool-result",
+                "id": msg.call_id,
+                "name": msg.tool,
+                "result": {"type": "text", "value": msg.text},
+                "providerExecuted": False,
+            }
+        ],
     }
-    if msg.role == "tool":
-        part = {
-            "id": f"p{n}",
-            "sessionID": session,
-            "messageID": f"m{n}",
-            "type": "tool",
-            "callID": msg.call,
-            "tool": msg.tool,
-            "state": {"status": "completed", "output": msg.body, "title": msg.title},
-        }
-    else:
-        part = {
-            "id": f"p{n}",
-            "sessionID": session,
-            "messageID": f"m{n}",
-            "type": "text",
-            "text": msg.text,
-        }
-    return {"info": info, "parts": [part]}
 
 
 def build_session(
@@ -111,12 +150,16 @@ def build_session(
                 "variant": None,
             },
             "model_limits": (
-                {"context": req.window, "output": 1000, "source": "synthetic"}
-                if req.window
+                {
+                    **{"context": None, "input": None, "output": 1000},
+                    **req.limits,
+                    "source": "synthetic",
+                }
+                if req.limits
                 else None
             ),
             "system": [{"type": "text", "text": t} for t in req.system],
-            "messages": [_message(session, n, m) for n, m in enumerate(req.messages, start=1)],
+            "messages": [_message(n, m) for n, m in enumerate(req.messages, start=1)],
             "tools": {name: definition(name, desc) for name, desc in req.tools.items()},
             "options": {},
             "adapter_version": "synthetic",
@@ -132,43 +175,49 @@ def build_session(
 
 
 # ---------------------------------------------------------------- measurement session
-TOOLS = {"read": "r" * 20, "bash": "b" * 30}
-U1 = Msg("user", "u" * 40)
-A1 = Msg("assistant", "a" * 60)
-T1 = Msg("tool", tool="read", call="c1", title="f1", body="x" * 500)
-T2 = Msg("tool", tool="bash", call="c2", title="npm test", body="y" * 300)
-U2 = Msg("user", "v" * 30)
-T3 = Msg("tool", tool="read", call="c3", title="f1", body="x" * 500)  # same body as T1
-A2 = Msg("assistant", "b" * 20)
-T4 = Msg("tool", tool="bash", call="c4", title="npm test", body="z" * 350)  # bytes differ from T2
+TOOLS = {"read": "r" * 20, "shell": "b" * 30}
+WINDOW = {"context": 1000}
+U1 = U("u" * 40)
+A1 = A("a" * 60)
+C1 = Call("c1", "read", path="f1")
+R1 = Result("c1", "read", "x" * 500)
+C2 = Call("c2", "shell", command="npm test")
+R2 = Result("c2", "shell", "y" * 300)
+U2 = U("v" * 30)
+C3 = Call("c3", "read", path="f1")  # the same call again
+R3 = Result("c3", "read", "x" * 500)  # and the same output again
+A2 = A("b" * 20)
+C4 = Call("c4", "shell", command="npm test")  # the same command again
+R4 = Result("c4", "shell", "z" * 350)  # but different bytes come back
 
 
 def growth_session() -> tuple[list[dict[str, Any]], list[list[Msg]]]:
-    """Five requests. History only ever grows; T3 repeats T1's output; T4 changes T2's bytes.
+    """Five requests. History only ever grows; R3 repeats R1's output; R4 changes R2's bytes.
 
     Returns (records, the message lists that were written, for hand-derived expectations).
     """
     histories = [
         [U1],
-        [U1, A1, T1],
-        [U1, A1, T1, T2, U2],
-        [U1, A1, T1, T2, U2, T3, A2],
-        [U1, A1, T1, T2, U2, T3, A2, T4],
+        [U1, A1, C1, R1],
+        [U1, A1, C1, R1, C2, R2, U2],
+        [U1, A1, C1, R1, C2, R2, U2, C3, R3, A2],
+        [U1, A1, C1, R1, C2, R2, U2, C3, R3, A2, C4, R4],
     ]
-    reqs = [Req(list(h), tools=TOOLS, window=1000) for h in histories]
+    reqs = [Req(list(h), tools=TOOLS, limits=WINDOW) for h in histories]
     return build_session("synthetic-growth", reqs), histories
 
 
 def rewrite_session() -> list[dict[str, Any]]:
-    """Four requests plus a compaction record. The third rewrites earlier history and the
-    fourth changes the system prompt, which breaks the prefix early."""
-    summary = Msg("assistant", "s" * 25)
+    """Four primary requests and a compaction record. After the compaction the history is
+    replaced by a summary (a rewrite), and the last request changes the system prompt, which
+    breaks the prefix early."""
+    summary = A("s" * 25)
     reqs = [
-        Req([U1], tools=TOOLS, window=1000),
-        Req([U1, A1, T1], tools=TOOLS, window=1000),
-        Req([], tools=TOOLS, window=1000, kind="compaction"),
-        Req([summary, T1, U2], tools=TOOLS, window=1000),
-        Req([summary, T1, U2, A2], tools=TOOLS, window=1000, system=["S" * 90 + "-changed"]),
+        Req([U1], tools=TOOLS, limits=WINDOW),
+        Req([U1, A1, C1, R1], tools=TOOLS, limits=WINDOW),
+        Req([], tools=TOOLS, limits=WINDOW, kind="compaction"),
+        Req([summary, U2], tools=TOOLS, limits=WINDOW),
+        Req([summary, U2, A2], tools=TOOLS, limits=WINDOW, system=["S" * 90 + "-changed"]),
     ]
     return build_session("synthetic-rewrite", reqs)
 
@@ -180,17 +229,41 @@ def no_tools_session() -> list[dict[str, Any]]:
 
 
 def long_session(requests: int = 45, *, repeat_every: int = 3) -> list[dict[str, Any]]:
-    """A long session for the S6 rule: history grows one message pair per request, and every
-    `repeat_every`-th tool result repeats an earlier one."""
+    """A long session for the S6 rule: history grows by a call and its result each request, and
+    every `repeat_every`-th result repeats an earlier one."""
     reqs, history = [], [U1]
     for i in range(1, requests + 1):
-        reqs.append(Req(list(history), tools=TOOLS, window=100000))
+        reqs.append(Req(list(history), tools=TOOLS, limits={"context": 100000}))
         body = "k" * 200 if i % repeat_every == 0 else f"{i:04d}" + "q" * 196
-        history += [
-            Msg("assistant", "a" * 30),
-            Msg("tool", tool="read", call=f"c{i}", title=f"f{i % 5}", body=body),
-        ]
+        history += [Call(f"c{i}", "read", path=f"f{i % 5}"), Result(f"c{i}", "read", body)]
     return build_session("synthetic-long", reqs)
+
+
+def edit_session(files: int, requests: int = 6) -> list[dict[str, Any]]:
+    """Edits `files` distinct files, one edit call per request from the first."""
+    history, reqs = [U1], []
+    for i in range(requests):
+        reqs.append(Req(list(history), tools={"edit": "e" * 10}))
+        if i < files:
+            history += [
+                Call(f"e{i}", "edit", path=f"file{i}.py", old="a", new="b"),
+                Result(f"e{i}", "edit", "Edited"),
+            ]
+        else:
+            history.append(A("a" * 20))
+    return build_session("synthetic-edits", reqs)
+
+
+def repeated_test_run_session(runs: int = 3) -> list[dict[str, Any]]:
+    """Runs the test command `runs` times through the shell tool."""
+    history, reqs = [U1], []
+    for i in range(runs + 1):
+        reqs.append(Req(list(history), tools={"shell": "s" * 10}))
+        history += [
+            Call(f"t{i}", "shell", command="pytest -q"),
+            Result(f"t{i}", "shell", "." * (i + 1)),
+        ]
+    return build_session("synthetic-tests", reqs)
 
 
 # ---------------------------------------------------------------- privacy session
@@ -249,51 +322,42 @@ def privacy_session(*, with_blind_spot_only: bool = False) -> list[dict[str, Any
     p = PLANTED.classes
     if with_blind_spot_only:
         system = ["You are a coding agent. Team passphrase: " + SCANNER_BLIND_SPOT]
-        history = [
-            Msg("user", "check the deploy notes for the " + SCANNER_BLIND_SPOT + " rotation")
-        ]
+        history = [U("check the deploy notes for the " + SCANNER_BLIND_SPOT + " rotation")]
     else:
+        secrets = [
+            p["repo_secrets"][0],
+            p["repo_secrets"][1],
+            p["api_key_shaped"][1],
+            p["api_key_shaped"][2],
+        ]
         system = [
             f"You are a coding agent working in {p['fake_paths'][0]} for "
             f"the team at {p['fake_emails'][0]}. Build host {p['fake_hostnames'][0]}.",
             "Project rules: never print " + p["api_key_shaped"][0] + ".",
         ]
         history = [
-            Msg("user", p["user_free_text"][0]),
-            Msg("assistant", "Looking at " + p["fake_paths"][1] + " first."),
-            Msg(
-                "tool",
-                tool="read",
-                call=p["identifiers"][2],
-                title="read " + p["fake_paths"][0],
-                body=".env\n"
-                + "\n".join(
-                    [
-                        p["repo_secrets"][0],
-                        p["repo_secrets"][1],
-                        p["api_key_shaped"][1],
-                        p["api_key_shaped"][2],
-                    ]
-                ),
-            ),
-            Msg(
-                "tool",
-                tool="read",
-                call="call-2",
-                title="read invoice_export.py",
-                body="\n".join(p["source_like"])
+            U(p["user_free_text"][0]),
+            A("Looking at " + p["fake_paths"][1] + " first."),
+            Think("The user mentioned " + p["fake_emails"][0] + " so I should be careful."),
+            Call(p["identifiers"][2], "read", path=p["fake_paths"][0]),
+            Result(p["identifiers"][2], "read", ".env\n" + "\n".join(secrets)),
+            Call("call-2", "read", path="invoice_export.py"),
+            Result(
+                "call-2",
+                "read",
+                "\n".join(p["source_like"])
                 + "\n# owner: "
                 + p["fake_emails"][1]
                 + " host "
                 + p["fake_hostnames"][1],
             ),
-            Msg("user", "run the export against " + p["fake_hostnames"][0]),
+            U("run the export against " + p["fake_hostnames"][0]),
         ]
-    reqs = [Req(history[:1], system=system, tools=TOOLS, window=1000)]
-    for n in range(2, len(history) + 1):
-        reqs.append(Req(history[:n], system=system, tools=TOOLS, window=1000))
-    session = "dry-run-ses-7f3a91"
-    records = build_session(session, reqs)
+    reqs = [
+        Req(history[:n], system=system, tools=TOOLS, limits=WINDOW)
+        for n in range(1, len(history) + 1)
+    ]
+    records = build_session("dry-run-ses-7f3a91", reqs)
     if not with_blind_spot_only:
         for i, r in enumerate(records, start=1):
             r["capture_id"] = f"cap-dry-{i:04d}-9c2e"
@@ -301,16 +365,27 @@ def privacy_session(*, with_blind_spot_only: bool = False) -> list[dict[str, Any
     return records
 
 
-# Worked out by hand from the part texts above (system 100 bytes; two definitions of 68 and 78;
-# tool results of 529, 335 and 385 bytes), not by running the analyser.
+# Worked out by hand from the part texts above: system 100 bytes; definitions of 68 (read) and
+# 79 (shell) bytes; part sizes user 40 and 30, assistant 60 and 20, calls 19 (read) and 29
+# (shell), results 500 (read, twice), 300 and 350 (shell).
 GROWTH_EXPECTED = {
-    "bytes": [286, 875, 1240, 1789, 2174],
-    "new_bytes": [286, 589, 365, 549, 385],
-    "carry_over_bytes": [0, 286, 875, 1240, 1789],
-    "redundant_payload_bytes": [0, 0, 0, 529, 529],
-    "prefix_bytes": [None, 286, 875, 1240, 1789],
+    "bytes": [287, 866, 1225, 1764, 2143],
+    "new_bytes": [287, 579, 359, 539, 379],
+    "carry_over_bytes": [0, 287, 866, 1225, 1764],
+    "redundant_payload_bytes": [0, 0, 0, 500, 500],
+    "duplicate_part_bytes": [0, 0, 0, 519, 548],
+    "prefix_bytes": [None, 287, 866, 1225, 1764],
     "identities_with_differing_bytes": [0, 0, 0, 0, 1],
-    "first_request_tool_definition_share": round(146 / 286, 6),
-    "last_request_redundant_payload_share": round(529 / 2174, 6),
-    "last_request_tool_result_share": round(1778 / 2174, 6),
+    "max_calls_per_identity": [0, 1, 1, 2, 2],
+    "first_request_tool_definition_share": round(147 / 287, 6),
+    "last_request_redundant_payload_share": round(500 / 2143, 6),
+    "last_request_tool_result_share": round(1650 / 2143, 6),
+    "last_request_category_bytes": {
+        "tool_definition": 147,
+        "system": 100,
+        "user": 70,
+        "assistant": 80,
+        "tool_call": 96,
+        "tool_result": 1650,
+    },
 }

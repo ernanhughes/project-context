@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from project_context.corpus.completeness import UNOBSERVED
-from project_context.corpus.f1_analysis import CATEGORIES, L1_SCHEMA
+from project_context.corpus.f1_analysis import ANALYSIS_VERSION, CATEGORIES, L1_SCHEMA
 from project_context.corpus.ledger import SIDECAR_KEYS
 from project_context.corpus.manifest import SECRET_PATTERNS
 from project_context.corpus.shapecards import SHAPES
@@ -75,22 +75,22 @@ def _strings(node: Any):
 
 
 def _structural_identifiers(record: dict[str, Any]):
-    """Identifiers the capture itself carries: session, capture, message, part and call ids."""
+    """Identifiers and arguments the capture itself carries, kept locally so the gate can look
+    for them: session, capture, message and call ids, and every string inside a tool call's
+    arguments (paths, commands, patterns)."""
     for key in ("session_id", "capture_id", "captured_at"):
         if isinstance(record.get(key), str):
             yield record[key]
     for message in record.get("messages", []):
-        info = message.get("info", {}) if isinstance(message, dict) else {}
-        for key, value in info.items():
-            if key.lower().endswith("id") and isinstance(value, str):
-                yield value
-        for part in message.get("parts", []) if isinstance(message, dict) else []:
-            for key in ("id", "messageID", "callID", "sessionID"):
-                if isinstance(part.get(key), str):
-                    yield part[key]
-            state = part.get("state")
-            if isinstance(state, dict) and isinstance(state.get("title"), str):
-                yield state["title"]
+        if not isinstance(message, dict):
+            continue
+        if isinstance(message.get("id"), str):
+            yield message["id"]
+        for part in message.get("content", []) if isinstance(message.get("content"), list) else []:
+            if isinstance(part.get("id"), str):
+                yield part["id"]
+            if part.get("type") == "tool-call":
+                yield from _strings(part.get("input"))
 
 
 @dataclass(frozen=True)
@@ -178,11 +178,18 @@ SESSION_KEYS = frozenset(
         "history_rewrite_events",
         "definition_change_events",
         "system_change_events",
-        "window_fraction_max",
+        "usage_join",
+        "provider_cache_read_fraction_median",
+        "window_limit_kind",
+        "window_fraction_max_measured",
+        "window_fraction_max_bytes_estimate",
+        "window_fraction_max_word_estimate",
+        "measured_prompt_tokens_max",
+        "measured_cost_total",
         "identities_with_differing_bytes",
         "max_calls_per_identity_last_request",
-        "edit_result_count",
-        "test_command_result_count",
+        "edit_call_count",
+        "test_command_call_count",
         "distinct_edit_targets",
     }
 )
@@ -190,7 +197,13 @@ REQUEST_KEYS = frozenset(
     {
         "index",
         "bytes",
-        "est_tokens",
+        "est_tokens_words",
+        "est_tokens_bytes",
+        "measured_prompt_tokens",
+        "measured_output_tokens",
+        "measured_cache_read_tokens",
+        "measured_cost",
+        "measured_latency_ms",
         "parts",
         "bytes_by_category",
         "parts_by_category",
@@ -204,7 +217,9 @@ REQUEST_KEYS = frozenset(
         "largest_tool_result_bytes",
         "tool_definition_share",
         "tool_result_share",
-        "window_fraction_estimate",
+        "window_fraction_measured",
+        "window_fraction_bytes_estimate",
+        "window_fraction_word_estimate",
         "max_calls_per_identity",
         "identities_with_differing_bytes",
         "prefix",
@@ -226,8 +241,13 @@ VOCAB: frozenset[str] = frozenset(
     {
         UNOBSERVED,
         "none",
+        "aligned",
+        "count_mismatch",
+        "input",
+        "context",
+        "mixed",
         L1_SCHEMA,
-        "1.0.0",
+        ANALYSIS_VERSION,
         "tool_definition",
         "system",
         "messages",

@@ -8,7 +8,7 @@
 
 export const BRIDGE_SCHEMA_V2 = "project_context.opencode_capture.v2";
 
-export const ADAPTER_VERSION = "0.2.0";
+export const ADAPTER_VERSION = "0.3.0";
 
 /**
  * V2 observation boundary: the OpenCode V2 semantic model-request
@@ -29,6 +29,7 @@ export type ModelRef = {
 
 export type ModelLimits = {
   context: number | null;
+  input?: number | null;
   output: number | null;
   source: string | null;
 };

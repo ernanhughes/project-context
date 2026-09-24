@@ -414,7 +414,7 @@
   "note": "SYNTHETIC -- NOT BOOK RESULT. Three consecutive primary model requests sharing the TypeScript adapter tests (inputs to expected records) and the Python debugger tests (records to bundles/views). Content is ASCII-only so the TypeScript and Python canonical hashes agree byte-for-byte; integrity hashes are producer-local and must not be compared across implementations on non-ASCII content. Designed conditions: stable system context; byte-identical repeated tool result (call-1); growing tool result (call-2); early change at record 3 (stable prefix then churn); tool-definition removal (bash) plus addition (grep) at record 3.",
   "records": [
     {
-      "adapter_version": "0.2.0",
+      "adapter_version": "0.3.0",
       "agent": "build",
       "capture_id": "cap-v2-001",
       "capture_stage": "opencode.v2.model_context",
@@ -508,7 +508,7 @@
       }
     },
     {
-      "adapter_version": "0.2.0",
+      "adapter_version": "0.3.0",
       "agent": "build",
       "capture_id": "cap-v2-002",
       "capture_stage": "opencode.v2.model_context",
@@ -680,7 +680,7 @@
       }
     },
     {
-      "adapter_version": "0.2.0",
+      "adapter_version": "0.3.0",
       "agent": "build",
       "capture_id": "cap-v2-003",
       "capture_stage": "opencode.v2.model_context",

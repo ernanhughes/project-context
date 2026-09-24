@@ -53,7 +53,7 @@ def _record(capture_id, kind, session, blocks=None, evidence="opencode_capture")
         "messages": blocks.get("messages", []),
         "tools": blocks.get("tools", {}),
         "options": {},
-        "adapter_version": "0.2.0",
+        "adapter_version": "0.3.0",
         "opencode_version": "2.0.16",
         "plugin_api_version": "@opencode/plugin 2.0.16",
         "observer_position": "context-hook",
@@ -93,7 +93,7 @@ def _blank_campaign():
         capture_schema="project_context.opencode_capture.v2",
         capture_stage="opencode.v2.model_context",
         opencode_version="2.0.16",
-        adapter_version="0.2.0",
+        adapter_version="0.3.0",
         started_at="2026-09-24T00:00:00Z",
     )
 

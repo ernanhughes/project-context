@@ -20,7 +20,7 @@ the measurement code is versioned so that it cannot be tuned to cross a line.
 from __future__ import annotations
 
 import statistics
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from project_context.corpus.completeness import UNOBSERVED
@@ -60,6 +60,9 @@ class Record:
     sessions_unobserved: int
     leave_one_out_flips: int | str
     meaning: str = MEANING
+    basis: str = ""  # which measurement the status rests on (T3 only)
+    other_bases: dict[str, Any] = field(default_factory=dict)  # the other measurements, beside it
+    borderline_bases: list[str] = field(default_factory=list)  # which of them sit near the line
 
     def to_dict(self) -> dict[str, Any]:
         return dict(self.__dict__)
@@ -166,15 +169,25 @@ def evaluate(sessions: list[dict[str, Any]], long_flags: list[bool]) -> list[Rec
     return [t1, t2, t3, t4]
 
 
-def _window_trigger(sessions: list[dict[str, Any]]) -> Record:
-    """At least two sessions reach 60% of the declared window, or any compaction occurs.
+# The three ways window pressure is measured. Never merged into one number. The measured one
+# is what the provider reported for the prompt; the other two are estimates from the captured
+# text. If the harness's own usage record is available it is preferred and the estimates are
+# kept only for comparison.
+WINDOW_BASES = (
+    ("measured", "window_fraction_max_measured"),
+    ("bytes_estimate", "window_fraction_max_bytes_estimate"),
+    ("word_estimate", "window_fraction_max_word_estimate"),
+)
+
+
+def _window_record(sessions: list[dict[str, Any]], key: str, metric: str) -> Record:
+    """At least two sessions reach 60% of the window, or any compaction occurs, on one basis.
 
     The decisive value is the second-highest session, since two must reach the line.
     """
-    fractions = _numbers([s["window_fraction_max"] for s in sessions])
+    fractions = _numbers([s[key] for s in sessions])
     unobserved = len(sessions) - len(fractions)
     compaction = sum(1 for s in sessions if s["compaction_records"] > 0)
-    metric = "second-highest session peak window fraction (estimated), or any compaction"
     if len(fractions) < MIN_SESSIONS_TO_EVALUATE and not compaction:
         return _finish(
             "T3_externalise_recall",
@@ -206,6 +219,52 @@ def _window_trigger(sessions: list[dict[str, Any]]) -> Record:
         len(fractions),
         unobserved,
         flips,
+    )
+
+
+def _window_trigger(sessions: list[dict[str, Any]]) -> Record:
+    """T3 on each basis, reported as one record on the primary basis with the others beside it.
+
+    The primary basis is the measured one when at least three sessions have it, otherwise the
+    bytes estimate. A trigger is labelled borderline when any basis sits within a quarter of the
+    line, and the record names which basis put it there. Disagreement between bases is recorded,
+    never averaged away.
+    """
+    metric = "second-highest session peak window fraction, or any compaction"
+    records = {
+        name: _window_record(sessions, key, f"{metric} ({name})") for name, key in WINDOW_BASES
+    }
+    measured_ok = records["measured"].status != NOT_EVALUABLE
+    primary_name = "measured" if measured_ok else "bytes_estimate"
+    primary = records[primary_name]
+    others = {
+        name: {
+            "observed_value": rec.observed_value,
+            "status": rec.status,
+            "band": rec.band,
+            "sessions_used": rec.sessions_used,
+        }
+        for name, rec in records.items()
+        if name != primary_name
+    }
+    near = [n for n, rec in records.items() if rec.band == "borderline"]
+    band = "borderline" if near and primary.status != NOT_EVALUABLE else primary.band
+    return Record(
+        primary.trigger,
+        primary.routes_to,
+        primary.metric,
+        primary.observed_value,
+        primary.routing_threshold,
+        primary.status,
+        primary.distance,
+        primary.relative_distance,
+        band,
+        primary.sessions_used,
+        primary.sessions_unobserved,
+        primary.leave_one_out_flips,
+        basis=primary_name,
+        other_bases=others,
+        borderline_bases=near,
     )
 
 

@@ -29,7 +29,11 @@ SUMMARISED = (
     "last_request_user_share",
     "largest_tool_result_share_max",
     "prefix_fraction_median",
-    "window_fraction_max",
+    "provider_cache_read_fraction_median",
+    "window_fraction_max_measured",
+    "window_fraction_max_bytes_estimate",
+    "window_fraction_max_word_estimate",
+    "measured_prompt_tokens_max",
     "history_rewrite_events",
     "identities_with_differing_bytes",
 )

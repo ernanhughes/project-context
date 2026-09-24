@@ -408,6 +408,30 @@ def build_parser() -> argparse.ArgumentParser:
     doctor_parser.add_argument(
         "--invocation", default=None, help="Restrict to one invocation sequence number."
     )
+
+    ledger = sub.add_parser("ledger", help="Deterministic context-ledger inspection.")
+    ledger_sub = ledger.add_subparsers(dest="ledger_command", required=True)
+
+    def _add_ledger_source(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            "source",
+            help="Fixture name (ledger-v1) or path to an events .jsonl store.",
+        )
+        parser.add_argument(
+            "--format", choices=("text", "json"), default="text", help="Report format."
+        )
+
+    inspect_ledger = ledger_sub.add_parser("inspect", help="Show projected ledger state.")
+    _add_ledger_source(inspect_ledger)
+    history_ledger = ledger_sub.add_parser("history", help="Show event history for one item.")
+    _add_ledger_source(history_ledger)
+    history_ledger.add_argument("item_id", help="Ledger item id.")
+    validate_ledger = ledger_sub.add_parser("validate", help="Validate a ledger event store.")
+    _add_ledger_source(validate_ledger)
+    replay_ledger = ledger_sub.add_parser(
+        "replay", help="Re-project a store twice and show the state digest."
+    )
+    _add_ledger_source(replay_ledger)
     return parser
 
 
@@ -956,6 +980,162 @@ def cmd_behavior_canary(reader: str) -> int:
     return 0
 
 
+LEDGER_FIXTURES_ROOT = Path("fixtures") / "ledger-v1"
+LEDGER_FIXTURE_NAMES = ("ledger-v1",)
+
+
+def _ledger_events_path(source: str) -> Path:
+    candidate = Path(source)
+    if candidate.is_file():
+        return candidate
+    if source in LEDGER_FIXTURE_NAMES:
+        return LEDGER_FIXTURES_ROOT / "events.jsonl"
+    raise ValueError(f"unknown ledger source: {source!r}")
+
+
+def _ledger_load(source: str):
+    from project_context.ledger.projection import project
+    from project_context.ledger.store import load_events
+
+    path = _ledger_events_path(source)
+    events = load_events(path)
+    return path, events, project(events)
+
+
+def cmd_ledger_inspect(source: str, output_format: str) -> int:
+    try:
+        path, events, state = _ledger_load(source)
+    except ValueError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 - ledger errors report, never raise
+        print(f"ledger INVALID: {exc}", file=sys.stderr)
+        return 3
+    synthetic = source in LEDGER_FIXTURE_NAMES
+    if output_format == "json":
+        print(json.dumps({**state.to_dict(), "source": str(path)}, indent=2, sort_keys=True))
+        return 0
+    label = " [SYNTHETIC]" if synthetic else ""
+    print(f"Context Ledger{label} ({len(events)} events, {len(state.items)} items)")
+    counts: Counter[str] = Counter(item.status.value for item in state.items)
+    print("status counts: " + ", ".join(f"{k}={counts[k]}" for k in sorted(counts)))
+    for status in sorted(counts):
+        print(f"\n{status.upper()}")
+        for item in state.items:
+            if item.status.value != status:
+                continue
+            print(f"  {item.item.item_id} [{item.item.kind.value}]")
+            print(f"    {item.item.statement}")
+            print(
+                f"    authority={item.item.authority.value} verification={item.verification.value}"
+            )
+            if item.superseded_by is not None:
+                print(f"    superseded_by={item.superseded_by}")
+            if item.contradicted_by is not None:
+                print(f"    contradicted_by={item.contradicted_by}")
+            if item.depends_on:
+                print(f"    depends_on={','.join(item.depends_on)}")
+    return 0
+
+
+def cmd_ledger_history(source: str, item_id: str, output_format: str) -> int:
+    try:
+        _path, _events, state = _ledger_load(source)
+    except ValueError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 - ledger errors report, never raise
+        print(f"ledger INVALID: {exc}", file=sys.stderr)
+        return 3
+    try:
+        item = state.get(item_id)
+    except KeyError:
+        print(f"ledger: unknown item {item_id!r}", file=sys.stderr)
+        return 2
+    lines = state.explain(item_id)
+    if output_format == "json":
+        print(json.dumps({"item_id": item_id, "history": list(lines)}, indent=2))
+        return 0
+    print(f"{item_id} [{item.item.kind.value}] status={item.status.value}")
+    for line in lines:
+        print(f"  {line}")
+    return 0
+
+
+def cmd_ledger_validate(source: str, output_format: str) -> int:
+    from project_context.ledger.projection import project
+    from project_context.ledger.store import load_events
+
+    try:
+        path = _ledger_events_path(source)
+        events = load_events(path)
+        first = project(events)
+        second = project(events)
+    except ValueError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 - ledger errors report, never raise
+        print(f"ledger INVALID: {exc}", file=sys.stderr)
+        return 3
+    if first.digest() != second.digest():
+        print("ledger INVALID: replay digest mismatch", file=sys.stderr)
+        return 3
+    if output_format == "json":
+        print(
+            json.dumps(
+                {
+                    "source": str(path),
+                    "events": len(events),
+                    "items": len(first.items),
+                    "digest": first.digest(),
+                    "valid": True,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    print(f"ledger valid: {path} ({len(events)} events, {len(first.items)} items)")
+    print(f"replay digest: {first.digest()}")
+    return 0
+
+
+def cmd_ledger_replay(source: str, output_format: str) -> int:
+    from project_context.ledger.projection import project
+    from project_context.ledger.store import load_events
+
+    try:
+        path = _ledger_events_path(source)
+        events = load_events(path)
+    except ValueError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 - ledger errors report, never raise
+        print(f"ledger INVALID: {exc}", file=sys.stderr)
+        return 3
+    first = project(events)
+    second = project([type(e).from_dict(e.to_dict()) for e in events])
+    match = first.digest() == second.digest()
+    if output_format == "json":
+        print(
+            json.dumps(
+                {
+                    "source": str(path),
+                    "events": len(events),
+                    "digest": first.digest(),
+                    "round_trip_match": match,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0 if match else 3
+    print(f"replayed {len(events)} events from {path}")
+    print(f"state digest: {first.digest()}")
+    print(f"serialisation round-trip: {'match' if match else 'MISMATCH'}")
+    return 0 if match else 3
+
+
 def _utcnow() -> str:
     from datetime import datetime, timezone
 
@@ -1467,6 +1647,14 @@ def main(argv: list[str] | None = None) -> int:
             return cmd_debug_doctor(
                 args.spool, args.session, args.format, args.invocation, primary_only
             )
+    if args.command == "ledger" and args.ledger_command == "inspect":
+        return cmd_ledger_inspect(args.source, args.format)
+    if args.command == "ledger" and args.ledger_command == "history":
+        return cmd_ledger_history(args.source, args.item_id, args.format)
+    if args.command == "ledger" and args.ledger_command == "validate":
+        return cmd_ledger_validate(args.source, args.format)
+    if args.command == "ledger" and args.ledger_command == "replay":
+        return cmd_ledger_replay(args.source, args.format)
     return 2
 
 

@@ -1,4 +1,4 @@
-Yeah I don't I like to **** Gary Schedule an account what the **** **** # OpenCode V2 capture adapter (read-only)
+# OpenCode V2 capture adapter (read-only)
 
 Observes OpenCode **2.0.16** (V2 API) assembled model-request context
 without mutating it. Pinned to `@opencode/plugin@2.0.16` exact.
@@ -16,7 +16,7 @@ One record per observed model request at the session context hook:
 Tool definitions are captured as model-visible description plus input
 schema only. Executable functions are never recorded. Request
 `options` are observed overrides only, never the complete effective
-provider configuration. Model limits are read from `ctx.model` where
+provider configuration. Model limits are read from `ctx.model.list()` where
 available, otherwise `null` (UNAVAILABLE — never hard-coded, never
 inferred from names). `event.result` is never set on compaction.
 

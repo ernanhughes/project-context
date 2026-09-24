@@ -8,9 +8,11 @@ session turned out. The ledger has two faces:
 * the **public projection** holds ordinals, coarse structure and states only: no session
   identity, no timestamps, no digests.
 
-Two kinds of ledger exist and cannot be mixed. An ``ecological`` ledger accepts only
-genuine sessions. A ``dry_run`` ledger accepts only synthetic ones and can never be loaded
-as the corpus. A pipeline test therefore cannot enter the ecological corpus by accident.
+Three kinds of ledger exist and cannot be mixed. An ``ecological`` ledger accepts only
+genuine sessions. A ``dry_run`` ledger accepts only synthetic ones, and a ``calibration``
+ledger only the deliberate tool-testing session used to check the instrument. Neither can be
+loaded as the corpus, and the ecological ledger refuses both. A pipeline test or a calibration
+session therefore cannot enter the ecological corpus by accident.
 """
 
 from __future__ import annotations
@@ -26,9 +28,12 @@ from project_context.corpus.strata import STRATA, UNCLASSIFIED
 LEDGER_SCHEMA = "project_context.f1_ledger.v1"
 ECOLOGICAL = "ecological"
 DRY_RUN = "dry_run"
+CALIBRATION = "calibration"
 
 # Reserved prefixes: anything carrying one is synthetic, whatever else it claims.
 SYNTHETIC_MARKERS = ("synthetic-", "dry-run-")
+CALIBRATION_MARKERS = ("calibration-",)
+NON_CORPUS_MARKERS = SYNTHETIC_MARKERS + CALIBRATION_MARKERS
 
 # Sidecar vocabulary (closed). Free text is not accepted anywhere.
 LANGUAGE_FAMILIES = (
@@ -150,13 +155,22 @@ PUBLIC_FIELDS = (
 )
 
 
+def session_class(session_key: str, evidence_class: str) -> str:
+    """ecological, synthetic or calibration. Anything that is not plainly ecological is not."""
+    if evidence_class == CALIBRATION or session_key.startswith(CALIBRATION_MARKERS):
+        return CALIBRATION
+    if evidence_class != ECOLOGICAL or session_key.startswith(SYNTHETIC_MARKERS):
+        return "synthetic"
+    return ECOLOGICAL
+
+
 def is_synthetic(session_key: str, evidence_class: str) -> bool:
-    return evidence_class != ECOLOGICAL or session_key.startswith(SYNTHETIC_MARKERS)
+    return session_class(session_key, evidence_class) != ECOLOGICAL
 
 
 class Ledger:
     def __init__(self, path: Path, kind: str, campaign_id: str, created_at: str):
-        if kind not in (ECOLOGICAL, DRY_RUN):
+        if kind not in (ECOLOGICAL, DRY_RUN, CALIBRATION):
             raise LedgerError(f"unknown ledger kind {kind!r}")
         self.path, self.kind, self.campaign_id, self.created_at = (
             path,
@@ -199,11 +213,15 @@ class Ledger:
 
     # -- writing
     def add(self, entry: Entry) -> Entry:
-        synthetic = is_synthetic(entry.session_key, entry.evidence_class)
-        if self.kind == ECOLOGICAL and synthetic:
-            raise LedgerError("synthetic or dry-run material is refused by the ecological ledger")
-        if self.kind == DRY_RUN and not synthetic:
+        klass = session_class(entry.session_key, entry.evidence_class)
+        if self.kind == ECOLOGICAL and klass != ECOLOGICAL:
+            raise LedgerError(
+                "synthetic, dry-run or calibration material is refused by the ecological ledger"
+            )
+        if self.kind == DRY_RUN and klass != "synthetic":
             raise LedgerError("only synthetic material may enter a dry-run ledger")
+        if self.kind == CALIBRATION and klass != CALIBRATION:
+            raise LedgerError("only calibration sessions may enter a calibration ledger")
         if any(e.session_key == entry.session_key for e in self.entries):
             raise LedgerError("session already in the ledger")
         if entry.exclusion_reason is not None and entry.exclusion_reason not in EXCLUSION_REASONS:
