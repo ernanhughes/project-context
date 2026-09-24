@@ -1,0 +1,1531 @@
+{
+  "schema_version": "project_context.leverage_result.v1",
+  "experiment_id": "oracle-leverage-v1",
+  "spec": "experiments/oracle-leverage-v1/spec.md",
+  "fixture_freeze_commit": "b2bafcc",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "model_config_digest": "3c07edc1e9d0fe0e16a2247b6ab0326b7f8b728258d522270e21ce5bd57ff00c",
+  "actual_model_digest": "8039dd90c1138d772437a0779a33b7349efd5d9cca71edcd26e4dd463f90439d",
+  "grader_version": "leverage-grader-v1",
+  "grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "runner_version": "leverage-runner-v1",
+  "runner_digest": "613aa2f28c72d502e9c80c17814b0689ec5cf5d0389ee1cf187e2b82943826f7",
+  "runs": [
+    {
+      "run_id": "olv1-r001",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r001",
+        "fixture_id": "t01-legacy-case",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "row list produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t01-legacy-case:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 284.843,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 284.843,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r002",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r002",
+        "fixture_id": "t04-utc-stamp",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "stored JSON line with at value"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t04-utc-stamp:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 42.875,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 42.875,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r003",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r003",
+        "fixture_id": "t07-closed-schema",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "signup payload object produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t07-closed-schema:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=False;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 36.421,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 36.421,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r004",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r004",
+        "fixture_id": "t02-retry-idempotency",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "uploader.py parses"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": true
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t02-retry-idempotency:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 84.875,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 84.875,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r005",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r005",
+        "fixture_id": "t05-version-header",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "catalogue.py parses"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t05-version-header:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 92.296,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 92.296,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r006",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r006",
+        "fixture_id": "t08-eu-residency",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "checkout label produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t08-eu-residency:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=False;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 227.985,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 227.985,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r007",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r007",
+        "fixture_id": "t03-stable-board",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "four name-score rows"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t03-stable-board:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 46.61,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 46.61,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r008",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r008",
+        "fixture_id": "t06-legal-hold",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "store row list after cleanup"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": true
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t06-legal-hold:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 53.062,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 53.062,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r009",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r009",
+        "fixture_id": "t01-legacy-case",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "row list produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t01-legacy-case:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 49.062,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 49.062,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r010",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r010",
+        "fixture_id": "t04-utc-stamp",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "stored JSON line with at value"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t04-utc-stamp:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 124.75,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 124.75,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r011",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r011",
+        "fixture_id": "t07-closed-schema",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "signup payload object produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t07-closed-schema:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=False;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 302.36,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 302.36,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r012",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r012",
+        "fixture_id": "t02-retry-idempotency",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "uploader.py parses"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": true
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t02-retry-idempotency:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 70.453,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 70.453,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r013",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r013",
+        "fixture_id": "t05-version-header",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "catalogue.py parses"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t05-version-header:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 40.219,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 40.219,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r014",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r014",
+        "fixture_id": "t08-eu-residency",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "checkout label produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t08-eu-residency:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=False;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 61.875,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 61.875,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r015",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r015",
+        "fixture_id": "t03-stable-board",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "four name-score rows"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t03-stable-board:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 47.843,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 47.843,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r016",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r016",
+        "fixture_id": "t06-legal-hold",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "store row list after cleanup"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": true
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t06-legal-hold:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 60.516,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 60.516,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r017",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r017",
+        "fixture_id": "t01-legacy-case",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "row list produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t01-legacy-case:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 240.828,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 240.828,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r018",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r018",
+        "fixture_id": "t04-utc-stamp",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "stored JSON line with at value"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t04-utc-stamp:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 207.219,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 207.219,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r019",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r019",
+        "fixture_id": "t07-closed-schema",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "signup payload object produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t07-closed-schema:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=False;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 41.61,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 41.61,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r020",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r020",
+        "fixture_id": "t02-retry-idempotency",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "uploader.py parses"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": true
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t02-retry-idempotency:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 72.25,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 72.25,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r021",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r021",
+        "fixture_id": "t05-version-header",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "catalogue.py parses"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t05-version-header:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 96.516,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 96.516,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r022",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r022",
+        "fixture_id": "t08-eu-residency",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "checkout label produced"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t08-eu-residency:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=False;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 257.5,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 257.5,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r023",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r023",
+        "fixture_id": "t03-stable-board",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "four name-score rows"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": false
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t03-stable-board:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 49.422,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 49.422,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    },
+    {
+      "run_id": "olv1-r024",
+      "attempts": [
+        {
+          "attempt": 1,
+          "infra_status": "ok"
+        }
+      ],
+      "transport": {
+        "status": "FAIL",
+        "reason": "no observed context records",
+        "records": 0
+      },
+      "graded": {
+        "run_id": "olv1-r024",
+        "fixture_id": "t06-legal-hold",
+        "grader_version": "leverage-grader-v1",
+        "parse": {
+          "schema_version": "project_context.leverage_parse.v1",
+          "ok": true,
+          "reason": "store row list after cleanup"
+        },
+        "behaviour": {
+          "schema_version": "project_context.leverage_behaviour.v1",
+          "task_score": 0.0,
+          "harmful_action": true
+        },
+        "adherence": [
+          {
+            "schema_version": "project_context.leverage_adherence.v1",
+            "constraint_id": "t06-legal-hold:decisive",
+            "adhered": false,
+            "evidence": "required_present=False;forbidden_hit=True;parse=True"
+          }
+        ],
+        "utilisation": {
+          "schema_version": "project_context.leverage_utilisation.v1",
+          "evidence_use": false,
+          "admitted": false,
+          "decisive_present": false
+        },
+        "economics": {
+          "latency_s": 52.906,
+          "call_count": 0,
+          "input_tokens": null,
+          "output_tokens": null,
+          "reasoning_tokens": null,
+          "cached_tokens": null,
+          "reported_cost": null
+        },
+        "valid": false,
+        "exclusion_reason": "observer reconciliation failure"
+      },
+      "economics": {
+        "latency_s": 52.906,
+        "call_count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "reasoning_tokens": null,
+        "cached_tokens": null,
+        "reported_cost": null
+      }
+    }
+  ],
+  "run_count": 24,
+  "result_digest": "fa9b2a6a4d0b0056f1b3d07fb54beb70402c99d651c3b3ecbdb2cec433f6e383",
+  "hard_stop": null
+}
