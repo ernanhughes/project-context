@@ -61,7 +61,6 @@ export default Plugin.define({
   id: "context-runtime-injection",
   async setup(ctx) {
     if (process.env["PROJECT_CONTEXT_RUNTIME"] !== "inject") return;
-    traceSetup("context-runtime-injection");
     const pluginCtx = ctx as unknown as PluginContext;
     const blockPath = process.env["PROJECT_CONTEXT_RUNTIME_BLOCK"];
     await pluginCtx.session.hook("context", (_event) => {
@@ -100,5 +99,8 @@ export default Plugin.define({
       event.system = next;
       finish("injected", next.length);
     });
+    // Reached only if hook registration completed: the setup record
+    // therefore implies the hook is registered, not merely attempted.
+    traceSetup("context-runtime-injection");
   },
 });
