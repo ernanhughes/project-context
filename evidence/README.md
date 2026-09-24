@@ -57,3 +57,18 @@ is recorded in the manifest's limitations.
 Adding a run: add it to `RUNS` in `scripts/evidence_manifest.py` and to
 `APPROVED` in `scripts/publish_evidence_runs.py`, record the approval, publish,
 and commit the new manifest. Existing manifests are not edited by hand.
+
+## Sibling-project results used as background
+
+The book's Memory-project findings are background, not evidence for the Context
+book. The Memory manuscript is unpublished and its manuscript repository is
+private; the runs behind the quoted findings are public in
+`ernanhughes/project-memory`, under `experiments/benchmark/runs/`, first added in
+commit `8044214`.
+
+| Finding as described in the book | Sibling run | Checked against stored results |
+|---|---|---|
+| Memory-dependent tasks: assembled memory, removal and restoration, wrong memory, small reader | `ch12-20260920T204414Z-behavior` | yes |
+| Stronger reader: full history against its own floor; frame-selected against assembled | `sr1c-ch12-confirm-20260920T234546Z-muse` | yes |
+| Project scoping and cross-project leakage | `ch10-20260920T163314Z-context-frames` | yes |
+| Stronger reader gaining on arbitrary-history tasks | none located | **no**: not used in the book |
