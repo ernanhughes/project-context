@@ -1,0 +1,32 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "amendment_id": "harness-amendment-04",
+  "reason": "oracle-leverage-v1 uses compiled/supplied context, so the wave gate must require the full compile\u2192inject\u2192observe chain for the scheduled subject model, not only generic transport liveness",
+  "failure": null,
+  "root_cause": {
+    "gap": "transport_liveness proves a marker can be injected and observed, but not that compiler-selected membership, representation, ordering, and rendered payload survive the path unchanged",
+    "missing": "compiler-canary gate binding bundle identity and render bytes to the scheduled model"
+  },
+  "repair": {
+    "preflight_gate": "compiler_liveness, active only when preflight receives compiler_canary",
+    "canary_contract": "compiler-canary.json from the transport package compiler smoke: compilation success, bundle identity, runtime injection with single-block growth, independent observer capture, exact render recovery, bundle id/hash match, requested-vs-observed attribution, all for the scheduled subject model",
+    "fail_closed": "missing/unreadable canary, non-PASS status, model mismatch, any false reconciliation flag, or carried failures fail preflight before subject inference",
+    "procedure": "run the compiler smoke with the scheduled subject model, pass its compiler-canary.json via --compiler-canary (local-only, never committed)",
+    "static_checks": "unchanged and still required"
+  },
+  "frozen_experimental_inputs_changed": false,
+  "behavioural_observations_before_amendment": 0,
+  "previous_amendment": "harness-amendment-03",
+  "original_harness_freeze_commit": "e5256e7",
+  "original_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "amendment01_runner_digest": "2b4f60e3fbc27282e4c7d8e3a475413B8bBA1E",
+  "amendment02_runner_digest": "613aa2f28c72d502e9c80c17814b0689ec5cf5d0389ee1cf187e2b82943826f7",
+  "amendment03_runner_digest": "010c359a05cf165989ed7ff6af2e06514d3665d023e220ffc2306f5eed40d084",
+  "new_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "new_runner_digest": "79422a340e20d870f166414c6da9320d7c421175bd44b255e646131ac15a1e88",
+  "result_schema_identity": "project_context.leverage_result.v1",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "experiment_rerun": "run-002 authorized only with transport_liveness PASS and compiler_liveness PASS for the scheduled model",
+  "amendment_digest": "c2326f28db7a5f2cd3525a172c80b4736de2e782c75a1990b6a60628e19fcd05"
+}

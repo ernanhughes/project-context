@@ -495,6 +495,11 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="Path to a smoke-test canary.json enforcing the transport liveness gate.",
     )
+    leverage_preflight.add_argument(
+        "--compiler-canary",
+        default="",
+        help="Path to a compiler-canary.json enforcing the compile→inject→observe gate.",
+    )
     exec_leverage = leverage_sub.add_parser("execute", help="Run the frozen 24-slot wave.")
     exec_leverage.add_argument(
         "--confirm",
@@ -1592,11 +1597,12 @@ def cmd_runtime_demo(case: str, output_format: str) -> int:
     return 0
 
 
-def cmd_leverage_preflight(transport_canary: str = "") -> int:
+def cmd_leverage_preflight(transport_canary: str = "", compiler_canary: str = "") -> int:
     from project_context.leverage.run import preflight
 
     report = preflight(
         transport_canary=transport_canary or None,
+        compiler_canary=compiler_canary or None,
     )
     checks = report["checks"]
     assert isinstance(checks, dict)
@@ -1610,6 +1616,7 @@ def cmd_leverage_preflight(transport_canary: str = "") -> int:
         "hidden_truth_isolation",
         "runtime_wiring",
         "transport_liveness",
+        "compiler_liveness",
         "overall",
     ):
         if name in checks:
@@ -2181,7 +2188,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "runtime" and args.runtime_command == "demo":
         return cmd_runtime_demo(args.case, args.format)
     if args.command == "leverage" and args.leverage_command == "preflight":
-        return cmd_leverage_preflight(args.transport_canary)
+        return cmd_leverage_preflight(args.transport_canary, args.compiler_canary)
     if args.command == "leverage" and args.leverage_command == "execute":
         return cmd_leverage_execute(args.confirm, args.wave_dir)
     return 2

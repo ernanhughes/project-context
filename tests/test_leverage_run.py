@@ -719,3 +719,85 @@ def test_transport_liveness_missing_package_fails(tmp_path, monkeypatch):
     report = preflight(entries=GOOD_ENTRIES, transport_canary=str(canary))
     assert "not installed" in report["checks"]["transport_liveness"]
     assert report["checks"]["overall"] == "FAIL"
+
+
+def _write_compiler_canary(tmp_path, **overrides):
+    doc = {
+        "schema": "project_context.compile_canary.v1",
+        "status": "PASS",
+        "compiler": {"packageVersion": "0.2.3", "revision": "test-rev"},
+        "request": {"request_id": "r", "policy_version": "compiler-policy-v1"},
+        "compilation": {
+            "success": True,
+            "bundle_id": "b",
+            "bundle_hash": "h",
+            "bundle_tokens": 29,
+        },
+        "render": {"rendered_hash": "rh"},
+        "transport": {
+            "runtime_block_hash": "bh",
+            "runtime_outcome": "injected",
+            "pre_blocks": 4,
+            "post_blocks": 5,
+        },
+        "observer": {
+            "session_id": "ses_test",
+            "sequence": 1,
+            "observed_model": "ollama/mistral-small:latest",
+            "marker_count": 1,
+        },
+        "reconciliation": {
+            "compiler_render_exact": True,
+            "runtime_exact": True,
+            "bundle_id_match": True,
+            "bundle_hash_match": True,
+            "model_match": True,
+        },
+        "failures": [],
+    }
+    doc.update(overrides)
+    path = tmp_path / "compiler-canary.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return path
+
+
+def test_compiler_liveness_absent_by_default():
+    report = preflight(entries=GOOD_ENTRIES)
+    assert "compiler_liveness" not in report["checks"]
+    assert report["checks"]["overall"] == "PASS"
+
+
+def test_compiler_liveness_missing_canary_fails_closed(tmp_path):
+    report = preflight(
+        entries=GOOD_ENTRIES, compiler_canary=str(tmp_path / "absent.json")
+    )
+    assert report["checks"]["compiler_liveness"].startswith("FAIL")
+    assert report["checks"]["overall"] == "FAIL"
+
+
+def test_compiler_liveness_wrong_model_fails(tmp_path):
+    canary = _write_compiler_canary(tmp_path)
+    doc = json.loads(canary.read_text(encoding="utf-8"))
+    doc["observer"]["observed_model"] = "other/model:tag"
+    canary.write_text(json.dumps(doc), encoding="utf-8")
+    report = preflight(entries=GOOD_ENTRIES, compiler_canary=str(canary))
+    assert "scheduled" in report["checks"]["compiler_liveness"]
+    assert report["checks"]["overall"] == "FAIL"
+
+
+def test_compiler_liveness_failed_reconciliation_fails(tmp_path):
+    canary = _write_compiler_canary(tmp_path)
+    doc = json.loads(canary.read_text(encoding="utf-8"))
+    doc["reconciliation"]["bundle_hash_match"] = False
+    doc["failures"] = ["bundle_hash"]
+    canary.write_text(json.dumps(doc), encoding="utf-8")
+    report = preflight(entries=GOOD_ENTRIES, compiler_canary=str(canary))
+    assert report["checks"]["compiler_liveness"].startswith("FAIL")
+    assert report["checks"]["overall"] == "FAIL"
+
+
+def test_compiler_liveness_passes_with_matching_canary(tmp_path):
+    canary = _write_compiler_canary(tmp_path)
+    report = preflight(entries=GOOD_ENTRIES, compiler_canary=str(canary))
+    assert report["checks"]["compiler_liveness"] == "PASS"
+    assert report["checks"]["overall"] == "PASS"

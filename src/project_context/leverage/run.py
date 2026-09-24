@@ -668,17 +668,19 @@ def preflight(
     fixtures_root: Path = FIXTURES_ROOT,
     entries: list[dict] | None = None,
     transport_canary: str | Path | None = None,
+    compiler_canary: str | Path | None = None,
 ) -> dict:
     """Static preflight: every frozen identity, no inference calls. The
     subject-model identity always comes from the frozen schedule; there
     is no independent model default that could mask a mismatch.
 
     When `transport_canary` is supplied (path to a smoke-test
-    canary.json), the transport_liveness gate is additionally enforced:
-    a live observer canary, a live runtime canary, their
-    reconciliation, and requested-vs-observed attribution, all for the
-    scheduled subject model. Without a canary the static checks run as
-    before; future waves must supply one (see harness-amendment-03)."""
+    canary.json), the transport_liveness gate is additionally enforced.
+    When `compiler_canary` is supplied (path to a
+    compiler-canary.json), the compiler_liveness gate is additionally
+    enforced: a passed compile → inject → observe chain for the
+    scheduled subject model. Without canaries the static checks run as
+    before; future waves must supply both (see harness-amendment-04)."""
     schedule = load_schedule(schedule_path)
     report: dict[str, object] = {"checks": {}, "subject_model_calls": 0, "fixture_probing_calls": 0}
     checks = report["checks"]
@@ -715,6 +717,10 @@ def preflight(
     if transport_canary is not None:
         checks["transport_liveness"] = _check_transport_liveness(
             schedule, transport_canary
+        )
+    if compiler_canary is not None:
+        checks["compiler_liveness"] = _check_compiler_liveness(
+            schedule, compiler_canary
         )
     checks["overall"] = "PASS" if all(str(v) == "PASS" for v in checks.values()) else "FAIL"
     return report
@@ -842,6 +848,48 @@ def _check_transport_liveness(schedule: dict, canary: str | Path) -> str:
         )
         if "project-context-opencode" not in (listed.stdout or ""):
             return "FAIL: project-context-opencode not installed"
+        return "PASS"
+    except Exception as exc:
+        return f"FAIL: {exc}"
+
+
+def _check_compiler_liveness(schedule: dict, canary: str | Path) -> str:
+    """Compiler gate (harness-amendment-04): the exact
+    compile → inject → observe path has already passed for the
+    scheduled subject model. The canary is the compiler-canary.json
+    written by the transport package's compiler smoke (one trivial
+    live request): compilation success, bundle validity, runtime
+    injection, independent observer capture, and full identity/hash
+    reconciliation, all for the scheduled model. Anything short of
+    that fails closed. No inference happens here."""
+    try:
+        doc = json.loads(Path(canary).read_text(encoding="utf-8"))
+        if doc.get("schema") != "project_context.compile_canary.v1":
+            return "FAIL: not a compiler canary document"
+        if doc.get("status") != "PASS":
+            return f"FAIL: canary status {doc.get('status')!r}"
+        subject = schedule.get("subject_model", {}).get("model")
+        observed = ((doc.get("observer") or {}).get("observed_model"))
+        if observed != subject:
+            return f"FAIL: canary model {observed!r} != scheduled {subject!r}"
+        compilation = doc.get("compilation") or {}
+        if compilation.get("success") is not True:
+            return "FAIL: canary compilation did not succeed"
+        for key in ("bundle_id", "bundle_hash"):
+            if not compilation.get(key):
+                return f"FAIL: canary missing {key}"
+        rec = doc.get("reconciliation") or {}
+        for key in (
+            "compiler_render_exact",
+            "runtime_exact",
+            "bundle_id_match",
+            "bundle_hash_match",
+            "model_match",
+        ):
+            if rec.get(key) is not True:
+                return f"FAIL: canary reconciliation {key} is not true"
+        if doc.get("failures"):
+            return f"FAIL: canary carries failures {doc.get('failures')!r}"
         return "PASS"
     except Exception as exc:
         return f"FAIL: {exc}"
