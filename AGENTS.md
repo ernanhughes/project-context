@@ -145,19 +145,27 @@ analysis reads files. A source scan test pins this invariant.
 
 ## Reproducibility invariants
 
-39. **Record the strongest reader identity available, and never invent
-    one.** A live reader's manifest carries the model digest when the
-    endpoint exposes it (`reader_model_digest`, with its source) and
-    says `unavailable` otherwise. A model configured with a moving alias
-    (no tag, or `:latest`) is refused by `behavior run` unless
-    `--allow-moving-model-alias` is passed, and the run is then recorded
-    as non-reproducible from the name. Frozen fixture manifests are
+39. **Runs that support a published claim record the strongest reader
+    identity available, and never invent one.** Every live run carries
+    `run_purpose` (`evidence` by default, or `exploratory`) and, in its
+    manifest, the model digest when the endpoint exposes it
+    (`reader_model_digest`, with its source), else `unavailable`. An
+    evidence run whose model is a moving alias (no tag, or `:latest`) is
+    refused unless `--allow-moving-model-alias` acknowledges it, and is
+    then recorded as non-reproducible from the name. Exploratory runs
+    (`--exploratory`) may use any model, are labelled as such, and can
+    never be cited as confirmatory evidence. Frozen fixture manifests are
     historical records and are never edited to hide an alias; a rerun is
     a new run.
-40. **Every frozen run the book cites has a committed evidence manifest**
-    (`evidence/manifests/`, `scripts/evidence_manifest.py`) whose numbers
-    are recomputed from the artifacts. Raw artifacts stay local until
-    sanitisation plus recorded human approval (rule 5).
+40. **Every frozen run the book cites has a published copy and a
+    committed evidence manifest.** Copies live under `evidence/runs/`
+    (byte for byte, synthetic runs only, copied by
+    `scripts/publish_evidence_runs.py` behind its sanitisation gate) and
+    are pinned in `evidence/manifests/` by digest and by numbers
+    recomputed from the artifacts (`scripts/evidence_manifest.py`).
+    Publishing a new run needs sanitisation plus recorded human approval
+    (rule 5, `specs/privacy.md`). Nothing about this constrains
+    exploratory work, which stays local.
 
 ## Before implementing any mechanism
 

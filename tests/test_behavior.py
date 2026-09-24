@@ -31,10 +31,11 @@ from project_context.behavior.tasks import FAMILIES, grade
 from project_context.readers.domain import ReaderRequest
 from project_context.readers.fake import FakeProviderError, FakeReader
 from project_context.readers.openai_chat import OpenAIChatAdapter, OpenAIChatConfig
+from project_context.runs.locate import frozen_run_dir
 
 ROOT = Path("fixtures") / "compiler-behavior-v1"
 COMPILER_ROOT = Path("fixtures") / "compiler-v1"
-SOURCE_RUN = Path(".local/runs/compiler-v1/run-001")
+SOURCE_RUN = frozen_run_dir("compiler-v1", "run-001")
 
 _RULES = {
     "qualification-trap": '{"action": "HOLD", "target": "migration", '
@@ -871,6 +872,7 @@ def test_live_run_refuses_moving_alias_unless_acknowledged(tmp_path):
 def test_live_run_records_digest_for_pinned_tag(tmp_path):
     run_dir = _run_live_fake(tmp_path, "llama3.1:8b", "42182419e950")
     env = dict(json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["environment"])
+    assert env["run_purpose"] == "evidence"
     assert env["reader_model_alias_moving"] == "False"
     assert env["reader_model_digest"] == "42182419e950"
     assert env["reader_model_identity_source"] == "ollama-api-tags"
@@ -901,3 +903,15 @@ def test_offline_fake_run_manifest_unchanged(tmp_path):
     )
     env = dict(json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["environment"])
     assert "reader_model_digest" not in env
+
+
+def test_exploratory_run_may_use_an_alias_and_is_labelled(tmp_path):
+    run_dir = _run_live_fake(tmp_path, "mistral-small:latest", None, run_purpose="exploratory")
+    env = dict(json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))["environment"])
+    assert env["run_purpose"] == "exploratory"
+    assert env["reader_model_alias_moving"] == "True"
+
+
+def test_unknown_run_purpose_is_refused(tmp_path):
+    with pytest.raises(ValueError, match="run_purpose"):
+        _run_live_fake(tmp_path, "llama3.1:8b", "d", run_purpose="confirmatory")

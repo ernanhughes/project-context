@@ -432,16 +432,22 @@ def run_suite(
     out_root: Path,
     resume: bool = False,
     allow_moving_model_alias: bool = False,
+    run_purpose: str = "evidence",
 ) -> Path:
     """Execute the frozen schedule. Refuses when the call count exceeds
     the explicit guard. Resumes completed cases without rerunning them.
 
     A live reader configured with a moving model alias (no tag, or the
-    `latest` tag) is refused unless the caller acknowledges it, because a
-    run made under an alias is not reproducible from the name. For any
+    `latest` tag) is refused for an evidence run unless the caller
+    acknowledges it, because a run made under an alias is not reproducible
+    from the name. An exploratory run (`run_purpose="exploratory"`) may use
+    an alias freely; it is labelled exploratory in its manifest and can
+    never be cited as confirmatory evidence. For any
     live reader the strongest identity the endpoint exposes (a model
     digest) is recorded in the run manifest; when none is exposed the
     manifest says so rather than inventing one."""
+    if run_purpose not in ("evidence", "exploratory"):
+        raise ValueError(f"run_purpose must be 'evidence' or 'exploratory', got {run_purpose!r}")
     manifest = load_manifest(behavior_root / "manifest.json")
     behavior_set = load_behavior_set(behavior_root)
     needed = len(schedule)
@@ -452,14 +458,15 @@ def run_suite(
     identity_env: tuple[tuple[str, str], ...] = ()
     if reader_info.get("live"):
         moving = bool(reader_info.get("model_alias_moving"))
-        if moving and not allow_moving_model_alias:
+        if moving and run_purpose == "evidence" and not allow_moving_model_alias:
             raise ValueError(
-                "reader model is a moving alias (no tag or ':latest'); pin an explicit "
-                "tag or pass allow_moving_model_alias to record the run as non-reproducible"
+                "reader model is a moving alias (no tag or ':latest'); an evidence run needs a "
+                "pinned tag, or acknowledge the alias, or make this an exploratory run"
             )
         resolver = getattr(adapter, "resolve_identity", None)
         resolved = resolver() if callable(resolver) else {}
         identity_env = (
+            ("run_purpose", run_purpose),
             ("reader_model_alias_moving", str(moving)),
             ("reader_model_digest", str(resolved.get("model_digest") or "unavailable")),
             (

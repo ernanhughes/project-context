@@ -52,6 +52,7 @@ from project_context.opencode.prevalence import (
     tool_result_stats,
 )
 from project_context.runs.artifacts import vcs_info, write_artifact
+from project_context.runs.locate import frozen_run_dir
 
 FIXTURES = {FIXTURE_ID: get_fixture}
 
@@ -295,8 +296,14 @@ def build_parser() -> argparse.ArgumentParser:
     beh_run.add_argument(
         "--allow-moving-model-alias",
         action="store_true",
-        help="Permit a reader model with no tag or ':latest'. The run is recorded as "
-        "non-reproducible from the model name.",
+        help="Acknowledge a reader model with no tag or ':latest' in an evidence run. The "
+        "run is recorded as non-reproducible from the model name.",
+    )
+    beh_run.add_argument(
+        "--exploratory",
+        action="store_true",
+        help="Label the run exploratory: moving model aliases are allowed and the run can "
+        "never be cited as confirmatory evidence.",
     )
     beh_run.add_argument(
         "--transfer",
@@ -743,7 +750,7 @@ def cmd_behavior_dry_run(reader: str) -> int:
     manifest = _behavior_manifest()
     behavior_set = load_behavior_set(BEHAVIOR_ROOT)
     source = BundleSource(
-        Path(".local/runs/compiler-v1/run-001"),
+        frozen_run_dir("compiler-v1", "run-001"),
         Path("fixtures/compiler-v1"),
     )
     problems: list[str] = []
@@ -804,6 +811,7 @@ def cmd_behavior_run(
     resume: bool,
     transfer: bool,
     allow_moving_model_alias: bool = False,
+    exploratory: bool = False,
 ) -> int:
     from project_context.behavior.fixtures import load_behavior_set
     from project_context.behavior.runner import (
@@ -830,7 +838,7 @@ def cmd_behavior_run(
     moment = timestamp or _utcnow()
     resolved_run_id = run_id or f"behavior-{moment.replace(':', '').replace('+', '')}"
     source = BundleSource(
-        Path(".local/runs/compiler-v1/run-001"),
+        frozen_run_dir("compiler-v1", "run-001"),
         Path("fixtures/compiler-v1"),
     )
     vcs = vcs_info(Path("."))
@@ -853,6 +861,7 @@ def cmd_behavior_run(
             out_root=Path(runs_dir),
             resume=resume,
             allow_moving_model_alias=allow_moving_model_alias,
+            run_purpose="exploratory" if exploratory else "evidence",
         )
     except ValueError as exc:
         print(f"refused: {exc}", file=sys.stderr)
@@ -1420,6 +1429,7 @@ def main(argv: list[str] | None = None) -> int:
             args.resume,
             args.transfer,
             args.allow_moving_model_alias,
+            args.exploratory,
         )
     if args.command == "behavior" and args.behavior_command == "validate-run":
         return cmd_behavior_validate_run(args.run_dir)
