@@ -1,0 +1,43 @@
+# Frozen experiment contract: oracle-leverage-v1. See specs/experiment-contract.md.
+question: >-
+  Can correct context, delivered through the qualified live runtime
+  path, change model behaviour on tasks constructed to require it?
+hypotheses: [H1-oracle-moves-behaviour, H2-distractor-does-not-help]
+population: fixtures/oracle-leverage-v1 manifest v1 (4-6 synthetic
+  counterfactual tasks with hidden truth; to be authored under the
+  frozen task rules, nothing built yet)
+independent_variable: supplied context content (N none, D matched
+  distractor, O oracle minimal relevant)
+controlled_variables:
+  - task text per task (frozen)
+  - repository snapshot per task (frozen)
+  - reader model and decoding (pinned at fixture-freeze, digest recorded)
+  - live runtime/observer pair (qualified 6D-R1 path, unchanged)
+  - frozen Stage 6D renderer and policy
+  - deterministic parser schema and grader per task
+  - hidden truth evaluator-side only (scan-pinned absent from payloads)
+conditions: [N, D, O]
+measurements:
+  - transport: observer-verified presence, byte identity, singularity,
+    placement per invocation; bundle digest
+  - utilisation: evidence_use; constraint adherence per-constraint booleans
+  - behaviour: task_score; harmful_action; parse_success
+  - economics: input/output tokens as reported; latency; call count
+success_criteria:
+  - O succeeds where N fails on counterfactual-designed tasks with
+    transport PASS in every compared run
+  - D behaves like N (distractor does not help)
+  - per-task outcomes kept; no claim beyond the task set
+failure_criteria:
+  - O does not outperform N despite verified transport
+  - any transport FAIL merged into behavioural comparison
+  - any oracle-text leak into N/D payloads
+  - any tuning after outputs seen
+falsification:
+  - leverage shown without verified transport (nothing tested)
+  - comparison changing more than the declared factor
+seed_strategy: schedule seed and decoding recorded at fixture-freeze;
+  one repeat per cell in wave 1 unless the frozen schedule says otherwise
+provider_model: live OpenCode sessions, local model at zero monetary
+  spend; exact model pinned with digest at fixture-freeze, no moving aliases
+cost_ceiling: fixed model-call guard in the frozen schedule; zero spend
