@@ -1,5 +1,12 @@
 # OpenCode capture protocol (V2 collection)
 
+> Superseded for installation and identity: the canonical integration
+> is now the `project-context-opencode` package
+> (`opencode plugin add github:ernanhughes/project-context-opencode`,
+> plugin id `project-context`, V2-compatibility check instead of an
+> exact pin). See `docs/opencode-integration.md`. The capture-stage
+> definition and per-record semantics below are unchanged.
+
 Status: protocol defined; V1 collection retired. A session enters the
 ecological corpus only through the steps below, in order.
 
