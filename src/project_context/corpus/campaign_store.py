@@ -158,9 +158,9 @@ def add_spool(
             entry["records"].append(record)
             entry["bundles"].append(bundle)
             entry.setdefault("files", set()).add(file_key)
-            hook = record.get("hook_kind")
-            if isinstance(hook, str):
-                entry.setdefault("hooks", set()).add(hook)
+            kind = record.get("request_kind")
+            if isinstance(kind, str):
+                entry.setdefault("hooks", set()).add(kind)
             if bundle.provenance is not None:
                 if bundle.provenance.adapter_version:
                     entry["adapter"].add(bundle.provenance.adapter_version)
@@ -195,12 +195,16 @@ def add_spool(
         dirty_files = [f for f in local_files if file_skips.get(f, 0) > 0]
         bad_records = session_invalid.get(key, 0)
         complete = not dirty_files and bad_records == 0
+        kinds = set(entry.get("hooks", set()))
         notes = []
         if dirty_files:
             notes.append(f"skipped lines in contributing files: {len(dirty_files)} file(s)")
         if bad_records:
             notes.append(f"invalid records attributed to session: {bad_records}")
-        notes.append("compaction hook not observed in Stage 1 boundary")
+        notes.append(
+            "compaction requests are captured as kind=compaction, "
+            "filtered from primary timelines by default"
+        )
         record_obj = SessionRecord(
             local_session_id=local_id,
             campaign_id=campaign.campaign_id,
@@ -216,9 +220,9 @@ def add_spool(
             tool_result_count=tool_results,
             complete_capture=complete,
             completeness_notes=tuple(notes),
-            compaction_observed=False,
+            compaction_observed="compaction" in kinds,
             parse_warnings=sum(file_skips.get(f, 0) for f in local_files),
-            hook_kinds=tuple(sorted(entry.get("hooks", set()))),
+            hook_kinds=tuple(sorted(kinds)),
             privacy_status="raw-local",
             publication_status="not-approved",
         )

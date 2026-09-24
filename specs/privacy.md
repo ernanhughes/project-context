@@ -50,3 +50,14 @@ filenames (UUIDs, never prompt/project/secret-derived) carry no content.
 Content fingerprints are local-only and never exported; export relabels
 session keys to ordinals and the gate refuses content, identifier, hash,
 and secret markers.
+## Context Debugger (Stage 5)
+
+The debugger is a local-only product layer over the same raw captures:
+it makes zero model calls and modifies no context. Default reports are
+structural only — no raw content, no raw session identifiers (local
+ordinals such as `local:1` instead), no hashes. Raw content prints only
+under an explicit local flag (`--show-content`, `--allow-content-search`
+for substring search), with a local-only warning on stdout. Debugger
+JSON is deterministic and versioned for a future local TUI; it carries
+the same structural-only default. Nothing captured or derived is ever
+sent to a model or the network by debugger code.

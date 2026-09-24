@@ -1,20 +1,20 @@
 {
   "name": "@project-context/opencode-capture",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Read-only OpenCode V1 capture adapter for Context Lab. Observes pre-dispatch context signals without mutating them.",
+  "description": "Read-only OpenCode V2 capture adapter for Context Lab. Observes assembled model-request context without mutating it.",
   "type": "module",
   "engines": {
     "node": ">=22.18.0"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/",
+    "test": "node --test tests/capture.test.ts",
     "lint": "prettier --check .",
     "format": "prettier --write ."
   },
   "devDependencies": {
-    "@opencode-ai/plugin": "1.18.27",
+    "@opencode/plugin": "^2.0.16",
     "@types/node": "25.0.3",
     "prettier": "3.9.9",
     "typescript": "7.0.2"

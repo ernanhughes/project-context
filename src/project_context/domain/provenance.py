@@ -19,6 +19,8 @@ class CaptureProvenance:
     sequence_index: int | None = None
     adapter_version: str | None = None
     opencode_version: str | None = None
+    plugin_api_version: str | None = None
+    request_kind: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -30,6 +32,8 @@ class CaptureProvenance:
             "sequence_index": self.sequence_index,
             "adapter_version": self.adapter_version,
             "opencode_version": self.opencode_version,
+            "plugin_api_version": self.plugin_api_version,
+            "request_kind": self.request_kind,
         }
 
     @classmethod
@@ -45,4 +49,6 @@ class CaptureProvenance:
             sequence_index=data.get("sequence_index"),
             adapter_version=data.get("adapter_version"),
             opencode_version=data.get("opencode_version"),
+            plugin_api_version=data.get("plugin_api_version"),
+            request_kind=data.get("request_kind"),
         )

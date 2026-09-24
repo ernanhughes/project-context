@@ -1,19 +1,36 @@
-# OpenCode capture protocol (future collection)
+# OpenCode capture protocol (V2 collection)
 
-Status: protocol defined; no collection runs yet. A session enters the
+Status: protocol defined; V1 collection retired. A session enters the
 ecological corpus only through the steps below, in order.
+
+## Versions (pinned, exact)
+
+```text
+OpenCode:             2.0.16
+plugin API:           V2
+plugin package:       @opencode/plugin 2.0.16
+adapter:              0.2.0
+bridge schema:        project_context.opencode_capture.v2
+capture stage:        opencode.v2.model_context
+```
+
+The adapter asserts the exact OpenCode version at setup and fails
+clearly otherwise. There is no V1 fallback. A version mismatch is
+deliberate migration work.
 
 ## Activation (user-driven)
 
 1. Install the adapter for one project: copy
    `integrations/opencode/src/*.ts` to
    `<project>/.opencode/plugins/contextlab/` (pure TypeScript, no
-   runtime dependencies). Load it **last** among context-touching
-   plugins; record the plugin order in the session notes.
-2. Set `PROJECT_CONTEXT_CAPTURE=1` and optionally
+   runtime dependencies), or reference it through `plugins` in
+   `opencode.json(c)`.
+2. Confirm the plugin id `context-debugger-capture` appears in
+   OpenCode's active plugin list after startup.
+3. Set `PROJECT_CONTEXT_CAPTURE=1` and optionally
    `PROJECT_CONTEXT_SPOOL_DIR` (default
    `~/.local/share/project-context/captures`, never inside a repo).
-3. Run OpenCode normally. No model calls are made by the adapter; no
+4. Run OpenCode normally. No model calls are made by the adapter; no
    data leaves the machine. Never start or stop the user's unrelated
    OpenCode processes to test capture; activation is user-driven only.
 
@@ -26,8 +43,8 @@ project category (not name/path)
 approximate task type (not prompt text)
 model/provider where observed
 start/end timestamps
-number of invocations observed
-whether compaction occurred (separately hooked; Stage 1: deferred)
+number of primary invocations observed (plus auxiliary counts, if any)
+whether compaction was observed (kind=compaction records)
 whether capture was complete (gaps noted)
 sanitisation/publication status
 ```
@@ -49,24 +66,23 @@ hashes of sanitised artifacts, and statuses only.
 
 ## Session identity (operational definition)
 
-A campaign session is the set of validated bridge records sharing one
-provenance session reference (`session_ref`), as carried by the
-`experimental.chat.system.transform`, `chat.message`, and
-`tool.execute.after` hooks, plus per-part session linkage inside
-message-list snapshots. Records without any session scope are
-`unlinked`: counted separately, never merged into a fictitious session,
-and excluded from session-scoped analyses (growth, shared prefix) with
-an explicit reason. One OpenCode session may still split across
-identities if hooks disagree; the campaign records what was observed,
-not what was assumed.
+A campaign session is the set of validated V2 bridge records sharing
+one `session_id`, ordered by `invocation_sequence`. The debugger's
+primary timelines use `request_kind == "context"` only; compaction and
+generate records carry an explicit kind and are counted separately,
+never merged into the primary series. Records without any session
+scope are `unlinked`: counted separately, never merged into a
+fictitious session, and excluded from session-scoped analyses (growth,
+shared prefix) with an explicit reason.
 
 ## Capture completeness (operational definition)
 
 `complete_capture` is true for a session when all its contributing
 files parsed without skipped lines, no invalid records were attributed
 to it, and at least one validated record exists. It means: all expected
-Stage 1 observer records for the session arrived without known adapter
-interruption. It does NOT mean complete provider context: tool
-definitions, generation settings, usage telemetry, and transport detail
-remain outside the V1 boundary, and compaction is separately hooked.
-A session can be observer-complete and provider-incomplete at once.
+V2 observer records for the session arrived without known adapter
+interruption. It does NOT mean complete provider context: the wire
+payload, provider-added material, cache behaviour, usage telemetry,
+and transport detail remain outside the `opencode.v2.model_context`
+boundary. A session can be observer-complete and provider-incomplete
+at once.

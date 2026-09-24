@@ -123,3 +123,42 @@ task, hidden truth never in reader payloads); the frozen contract in
 output ever tunes a task, grader, budget, or intervention: the fake
 reader serves development, and the first genuine call begins the frozen
 experiment.
+## Stage 5 — V2 capture plus Context Debugger (read-only product layer)
+
+OpenCode 2.0.16 (V2 API, `@opencode/plugin` 2.0.16 exact) exposes the
+unified hook Stage 1 was missing: `ctx.session.hook("context")` fires
+immediately before an agent model request with the assembled semantic
+system/messages/tools/options blocks together. The V1 adapter (four
+partial hooks, `opencode.v1.pre_dispatch_partial`) is retired: active
+code, bridge readers, fixtures, and tests target V2 only
+(`project_context.opencode_capture.v2`,
+`opencode.v2.model_context`). V1 records are rejected, never coerced.
+Historical V1 reports, fixtures, and the `BRIDGE_SCHEMA_V1` alias name
+remain for provenance only.
+
+```text
+OpenCode 2.0.16 (V2 API)
+  session.hook("context") → one observed primary model request
+  session.hook("compaction") → same shape, kind=compaction (result never set)
+  session.hook("generate") → same shape, kind=generate
+        ↓ local spool (.local/... or $PROJECT_CONTEXT_SPOOL_DIR)
+  Python ingester (no mutation of raw files)
+        ↓
+  ContextBundle (provenance: source_type opencode_capture,
+    request_kind, sequence_index=invocation_sequence)
+    + ModelInvocation (usage telemetry unavailable at this boundary: all None)
+        ↓
+  Context Debugger (src/project_context/debugger/): inspect, timeline,
+    query, compare, explain, detect — observations, never interventions
+```
+
+Boundary, stated once: this is **OpenCode V2 semantic model-request
+context**, not the byte-for-byte provider HTTP request.
+Protocol/provider lowering happens after the hook; provider-added
+material, the wire representation, and cache decisions stay
+unobserved (reported as such, never zero-filled). Stable prefix is
+structural evidence only, never a cache claim. Repeated is measurable;
+redundant is not claimed. Large is measurable; harmful is not claimed.
+Options are observed overrides, never complete effective provider
+configuration. Tool-definition exposure is availability, never
+utility. The debugger makes zero model calls.

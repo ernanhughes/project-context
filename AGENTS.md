@@ -111,29 +111,37 @@ analysis reads files. A source scan test pins this invariant.
     reader behaviour on synthetic tasks is the entire claim until real
     traces exist.
 
-## Stage 1 capture rules
+## Stage 1 capture rules (V2, pinned 2.0.16)
 
 11. **Capture is opt-in and off by default.** Never enable raw recording
     by merely installing the adapter; never manage the user's OpenCode
     processes to test capture.
 12. **Never mutate OpenCode context.** Copy and serialise only. The
-    no-mutation invariant is test-pinned, not just reviewed.
-13. **Call it pre-dispatch partial context**, never the provider wire
-    request. V1 has no unified assembled-context hook; record the
+    no-mutation invariant is test-pinned, not just reviewed. Never set
+    `event.result` on compaction; never write to the hook event.
+13. **Call it V2 model context**, never the provider wire request. The
+    V2 `session.hook("context")` boundary yields the assembled semantic
+    request; protocol/provider lowering happens after it. Record the
     limitation instead of inferring it away.
 14. **Never infer hidden origins from text.** Vendor, product, and
     project attribution require hook metadata, not prose heuristics.
-    Unattributable fields stay null.
+    Debugger categories are structural (ingester kind), never inferred
+    from prose. Unattributable fields stay null.
 15. **Unavailable stays unavailable.** No zeros for missing telemetry,
     no estimates labelled observed, no past-computation token fields
-    transferred into current invocations.
+    transferred into current invocations, no hard-coded model limits,
+    no capacities scraped from model names.
 16. **Raw captures stay local and unprinted.** Structural output by
-    default; no commits, no casual stdout, no uploads.
-17. **Observations are not interventions.** Nothing in the adapter may
-    transform, prune, compact, or rewrite; the adapter package must keep
-    zero runtime dependencies.
+    default; no commits, no casual stdout, no uploads. Content search
+    is local-only behind an explicit flag.
+17. **Observations are not interventions.** Nothing in the adapter or
+    the debugger may transform, prune, compact, rewrite, reorder, or
+    optimise; the adapter package must keep zero runtime dependencies
+    and the debugger must make zero model calls.
 18. **Pin API versions.** Adapter records OpenCode plus plugin-package
-    versions per capture; never depend on `latest`.
+    versions per capture; never depend on `latest`. A runtime version
+    mismatch fails clearly; there is no V1 fallback and no dual-version
+    runtime.
 
 ## Before implementing any mechanism
 

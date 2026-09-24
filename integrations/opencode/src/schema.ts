@@ -1,22 +1,25 @@
 /**
- * Bridge schema shared with the Python ingester. The single source of
- * truth for field names is fixtures/opencode-capture-v1/; this module
- * mirrors it. Unknown schema versions must be rejected loudly, never
- * coerced (see validateBridgeRecord).
+ * V2 bridge schema shared with the Python debugger ingester. The single
+ * source of truth for field names is
+ * fixtures/opencode-capture-v2/session-three-requests.json; this module
+ * mirrors it. V1 records are historical and must never be emitted here;
+ * the Python reader rejects them loudly, never coerced.
  */
 
-export const BRIDGE_SCHEMA_V1 = "project_context.opencode_capture.v1";
+export const BRIDGE_SCHEMA_V2 = "project_context.opencode_capture.v2";
 
-export const ADAPTER_VERSION = "0.1.0";
+export const ADAPTER_VERSION = "0.2.0";
 
-/** V1 observation boundary. NOT the assembled provider request. */
-export const CAPTURE_STAGE_V1 = "opencode.v1.pre_dispatch_partial";
+/**
+ * V2 observation boundary: the OpenCode V2 semantic model-request
+ * context observed at the session context hook immediately before the
+ * agent model request proceeds. NOT the byte-for-byte provider HTTP
+ * request, NOT provider-added material, NOT the provider cache
+ * decision.
+ */
+export const CAPTURE_STAGE_V2 = "opencode.v2.model_context";
 
-export type HookKind =
-  | "system.transform"
-  | "messages.transform"
-  | "chat.message"
-  | "tool.execute.after";
+export type RequestKind = "context" | "compaction" | "generate" | "title";
 
 export type ModelRef = {
   provider_id: string | null;
@@ -24,11 +27,10 @@ export type ModelRef = {
   variant: string | null;
 };
 
-export type BridgePayload = {
-  system?: unknown;
-  messages?: unknown;
-  admission?: unknown;
-  tool_result?: unknown;
+export type ModelLimits = {
+  context: number | null;
+  output: number | null;
+  source: string | null;
 };
 
 export type BridgeRecord = {
@@ -36,17 +38,20 @@ export type BridgeRecord = {
   capture_id: string;
   captured_at: string;
   capture_stage: string;
-  hook_kind: HookKind;
+  request_kind: RequestKind;
   session_id: string | null;
+  invocation_sequence: number;
   agent: string | null;
   model: ModelRef | null;
-  sequence_scope: string;
-  sequence_index: number;
+  model_limits: ModelLimits | null;
+  system: unknown;
+  messages: unknown;
+  tools: Record<string, unknown>;
+  options: Record<string, unknown>;
   adapter_version: string;
   opencode_version: string;
   plugin_api_version: string;
   observer_position: string;
-  payload: BridgePayload;
   integrity: { sha256: string };
   timings_ms: { serialize: number; write: number; total: number };
   evidence_class: "opencode_capture";
@@ -58,7 +63,10 @@ export function validateBridgeRecord(record: unknown): string[] {
     return ["record is not an object"];
   }
   const rec = record as Record<string, unknown>;
-  if (rec["schema"] !== BRIDGE_SCHEMA_V1) {
+  if (rec["schema"] !== BRIDGE_SCHEMA_V2) {
+    if (rec["schema"] === "project_context.opencode_capture.v1") {
+      return ["unsupported schema: V1 capture retired; re-capture under V2"];
+    }
     errors.push(`unsupported schema: ${String(rec["schema"])}`);
     return errors;
   }
@@ -66,16 +74,36 @@ export function validateBridgeRecord(record: unknown): string[] {
     "capture_id",
     "captured_at",
     "capture_stage",
-    "hook_kind",
-    "sequence_scope",
-    "payload",
+    "request_kind",
+    "session_id",
+    "invocation_sequence",
+    "agent",
+    "model",
+    "system",
+    "messages",
+    "tools",
+    "options",
     "integrity",
   ]) {
     if (!(key in rec)) errors.push(`missing key: ${key}`);
   }
-  const payload = rec["payload"];
-  if (typeof payload !== "object" || payload === null) {
-    errors.push("payload is not an object");
+  if ("system" in rec && !Array.isArray(rec["system"])) {
+    errors.push("system is not a list");
+  }
+  if ("messages" in rec && !Array.isArray(rec["messages"])) {
+    errors.push("messages is not a list");
+  }
+  if (
+    "tools" in rec &&
+    (typeof rec["tools"] !== "object" || rec["tools"] === null)
+  ) {
+    errors.push("tools is not an object");
+  }
+  if (
+    "options" in rec &&
+    (typeof rec["options"] !== "object" || rec["options"] === null)
+  ) {
+    errors.push("options is not an object");
   }
   return errors;
 }

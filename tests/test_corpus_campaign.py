@@ -31,23 +31,32 @@ def _spool(tmp_path: Path, files: dict[str, list[dict]]) -> Path:
     return spool
 
 
-def _record(capture_id, hook, session, payload_extra=None, evidence="opencode_capture"):
+_SEQ = {"n": 0}
+
+
+def _record(capture_id, kind, session, blocks=None, evidence="opencode_capture"):
+    """Build a minimal valid V2 record. ``kind`` is the request kind
+    (context/compaction/...); ``blocks`` overrides observed blocks."""
+    _SEQ["n"] += 1
+    blocks = blocks or {}
     record = {
-        "schema": "project_context.opencode_capture.v1",
+        "schema": "project_context.opencode_capture.v2",
         "capture_id": capture_id,
-        "captured_at": "2026-09-23T00:00:00Z",
-        "capture_stage": "opencode.v1.pre_dispatch_partial",
-        "hook_kind": hook,
+        "captured_at": "2026-09-24T00:00:00Z",
+        "capture_stage": "opencode.v2.model_context",
+        "request_kind": kind,
         "session_id": session,
-        "agent": None,
-        "model": None,
-        "sequence_scope": session or "unlinked",
-        "sequence_index": 1,
-        "adapter_version": "0.1.0",
-        "opencode_version": "1.18.27",
-        "plugin_api_version": "@opencode-ai/plugin 1.18.27",
-        "observer_position": "last-registered",
-        "payload": payload_extra or {},
+        "invocation_sequence": _SEQ["n"],
+        "agent": "build",
+        "model": {"provider_id": "p", "id": "m", "variant": None},
+        "system": blocks.get("system", []),
+        "messages": blocks.get("messages", []),
+        "tools": blocks.get("tools", {}),
+        "options": {},
+        "adapter_version": "0.2.0",
+        "opencode_version": "2.0.16",
+        "plugin_api_version": "@opencode/plugin 2.0.16",
+        "observer_position": "context-hook",
         "integrity": {"sha256": "0" * 64},
         "timings_ms": {"serialize": 0, "write": 0, "total": 0},
         "evidence_class": evidence,
@@ -55,15 +64,37 @@ def _record(capture_id, hook, session, payload_extra=None, evidence="opencode_ca
     return record
 
 
+def _text_message(text):
+    return {
+        "info": {"id": "m", "sessionID": "s", "role": "user"},
+        "parts": [{"id": "p", "type": "text", "text": text}],
+    }
+
+
+def _tool_message(tool, call, output):
+    return {
+        "info": {"id": "m", "sessionID": "s", "role": "assistant"},
+        "parts": [
+            {
+                "id": "p",
+                "type": "tool",
+                "tool": tool,
+                "callID": call,
+                "state": {"status": "completed", "output": output, "title": ""},
+            }
+        ],
+    }
+
+
 def _blank_campaign():
     return CampaignManifest(
         campaign_id="test",
         target_sessions=10,
-        capture_schema="project_context.opencode_capture.v1",
-        capture_stage="opencode.v1.pre_dispatch_partial",
-        opencode_version="1.18.27",
-        adapter_version="0.1.0",
-        started_at="2026-09-23T00:00:00Z",
+        capture_schema="project_context.opencode_capture.v2",
+        capture_stage="opencode.v2.model_context",
+        opencode_version="2.0.16",
+        adapter_version="0.2.0",
+        started_at="2026-09-24T00:00:00Z",
     )
 
 
@@ -76,9 +107,7 @@ def test_synthetic_evidence_refused_from_campaign(tmp_path):
         tmp_path,
         {
             "a.jsonl": [
-                _record(
-                    "c1", "system.transform", "ses-1", {"system": ["x"]}, evidence="synthetic-test"
-                )
+                _record("c1", "context", "ses-1", {"system": ["x"]}, evidence="synthetic-test")
             ]
         },
     )
@@ -90,23 +119,15 @@ def test_synthetic_evidence_refused_from_campaign(tmp_path):
 
 def test_unique_genuine_sessions_counted_once(tmp_path):
     recs_a = [
-        _record("c1", "system.transform", "ses-1", {"system": ["x"]}),
+        _record("c1", "context", "ses-1", {"system": ["x"]}),
         _record(
             "c2",
-            "tool.execute.after",
+            "context",
             "ses-1",
-            {
-                "tool_result": {
-                    "tool": "t",
-                    "callID": "k",
-                    "title": "",
-                    "output": "out",
-                    "metadata": {},
-                }
-            },
+            {"messages": [_tool_message("t", "k", "out")]},
         ),
     ]
-    recs_b = [_record("c3", "system.transform", "ses-1", {"system": ["x"]})]
+    recs_b = [_record("c3", "context", "ses-1", {"system": ["x"]})]
     spool = _spool(tmp_path, {"a.jsonl": recs_a, "b.jsonl": recs_b})
     updated, result, _index = _add(_blank_campaign(), spool, tmp_path)
     assert result.sessions_seen == 1
@@ -118,38 +139,30 @@ def test_corrupt_session_excluded_with_reason(tmp_path):
     spool = tmp_path / "spool"
     spool.mkdir()
     (spool / "bad.jsonl").write_text(
-        '{"schema": "project_context.opencode_capture.v1", "oops"\n', encoding="utf-8"
+        '{"schema": "project_context.opencode_capture.v2", "oops"\n', encoding="utf-8"
     )
     updated, result, _index = _add(_blank_campaign(), spool, tmp_path)
     assert updated.genuine_session_count() == 0
     assert result.skipped_lines == 1
 
 
-def test_observed_zero_vs_unobserved(tmp_path):
+def test_tool_definitions_observed_not_unobserved(tmp_path):
 
     tracker = SequenceTracker()
     bundles = [
         ingest_record(
             _record(
                 "c1",
-                "tool.execute.after",
+                "context",
                 "ses-1",
-                {
-                    "tool_result": {
-                        "tool": "t",
-                        "callID": "k",
-                        "title": "",
-                        "output": "out",
-                        "metadata": {},
-                    }
-                },
+                {"messages": [_tool_message("t", "k", "out")]},
             ),
             tracker,
         )[0]
     ]
     report = composition_report(bundles)
     assert report["items_by_role"].get("tool_call", 0) == 0
-    assert report["tool_definitions"] == "UNOBSERVED"
+    assert report["tool_definitions"] == "observed"
 
 
 def test_session_vs_invocation_weighting():
@@ -160,23 +173,15 @@ def test_session_vs_invocation_weighting():
         bundle, _ = ingest_record(
             _record(
                 f"a{i}",
-                "tool.execute.after",
+                "context",
                 "big",
-                {
-                    "tool_result": {
-                        "tool": "t",
-                        "callID": f"k{i}",
-                        "title": "",
-                        "output": "x" * 100,
-                        "metadata": {},
-                    }
-                },
+                {"messages": [_tool_message("t", f"k{i}", "x" * 100)]},
             ),
             tracker,
         )
         bundles.append(bundle)
     bundle, _ = ingest_record(
-        _record("b0", "system.transform", "small", {"system": ["y" * 10]}),
+        _record("b0", "context", "small", {"system": ["y" * 10]}),
         tracker,
     )
     bundles.append(bundle)
@@ -191,12 +196,8 @@ def test_prefix_never_crosses_sessions():
     from project_context.opencode.prevalence import structural_shared_prefix
 
     tracker = SequenceTracker()
-    first, _ = ingest_record(
-        _record("c1", "system.transform", "ses-a", {"system": ["same"]}), tracker
-    )
-    second, _ = ingest_record(
-        _record("c2", "system.transform", "ses-b", {"system": ["same"]}), tracker
-    )
+    first, _ = ingest_record(_record("c1", "context", "ses-a", {"system": ["same"]}), tracker)
+    second, _ = ingest_record(_record("c2", "context", "ses-b", {"system": ["same"]}), tracker)
     result = structural_shared_prefix(first, second)
     assert result["comparable"] is False
 
@@ -218,7 +219,7 @@ def test_aggregate_export_clean_and_rekeyed(tmp_path):
     tracker = SequenceTracker()
     bundles = [
         ingest_record(
-            _record("c1", "system.transform", "ses-real-9", {"system": ["zzz"]}),
+            _record("c1", "context", "ses-real-9", {"system": ["zzz"]}),
             tracker,
         )[0]
     ]
@@ -257,9 +258,7 @@ def test_exclusion_ledger_deterministic(tmp_path):
         tmp_path,
         {
             "a.jsonl": [
-                _record(
-                    "c1", "system.transform", "ses-1", {"system": ["x"]}, evidence="synthetic-test"
-                ),
+                _record("c1", "context", "ses-1", {"system": ["x"]}, evidence="synthetic-test"),
                 {"schema": "project_context.opencode_capture.v9"},
             ]
         },

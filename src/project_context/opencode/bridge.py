@@ -1,8 +1,13 @@
-"""Bridge-record validation and JSONL loading.
+"""Bridge-record validation and JSONL loading (V2 only).
 
-The bridge schema is owned jointly with the TypeScript adapter; the
-golden fixture at fixtures/opencode-capture-v1/ is the compatibility
-contract. Unknown schemas are rejected loudly, never coerced.
+Active schema: ``project_context.opencode_capture.v2`` observed at the
+OpenCode V2 ``session.hook("context")`` boundary
+(``opencode.v2.model_context``): one record per observed model request,
+carrying the assembled semantic system/messages/tools/options blocks.
+
+V1 records (``project_context.opencode_capture.v1``,
+``opencode.v1.pre_dispatch_partial``) are historical and are REJECTED by
+this reader — never coerced. Unknown schemas are rejected loudly.
 """
 
 from __future__ import annotations
@@ -11,28 +16,31 @@ import json
 from pathlib import Path
 from typing import Any
 
-BRIDGE_SCHEMA_V1 = "project_context.opencode_capture.v1"
-SUPPORTED_SCHEMAS = frozenset({BRIDGE_SCHEMA_V1})
+BRIDGE_SCHEMA_V2 = "project_context.opencode_capture.v2"
+# Historical only: active readers accept V2 and nothing else.
+BRIDGE_SCHEMA_V1_HISTORICAL = "project_context.opencode_capture.v1"
+SUPPORTED_SCHEMAS = frozenset({BRIDGE_SCHEMA_V2})
+
+CAPTURE_STAGE_V2 = "opencode.v2.model_context"
 
 REQUIRED_KEYS = (
     "schema",
     "capture_id",
     "captured_at",
     "capture_stage",
-    "hook_kind",
-    "sequence_scope",
-    "payload",
+    "request_kind",
+    "session_id",
+    "invocation_sequence",
+    "agent",
+    "model",
+    "system",
+    "messages",
+    "tools",
+    "options",
     "integrity",
 )
 
-KNOWN_HOOK_KINDS = frozenset(
-    {
-        "system.transform",
-        "messages.transform",
-        "chat.message",
-        "tool.execute.after",
-    }
-)
+KNOWN_REQUEST_KINDS = frozenset({"context", "compaction", "generate", "title"})
 
 
 class UnknownSchemaError(ValueError):
@@ -47,18 +55,31 @@ def validate_record(record: Any) -> list[str]:
     """Return error strings; empty means valid."""
     if not isinstance(record, dict):
         return ["record is not an object"]
-    errors = []
+    errors: list[str] = []
     schema = record.get("schema")
     if schema not in SUPPORTED_SCHEMAS:
+        if schema == BRIDGE_SCHEMA_V1_HISTORICAL:
+            return ["unsupported schema: V1 capture retired; re-capture under V2"]
         return [f"unsupported schema: {schema!r}"]
     for key in REQUIRED_KEYS:
         if key not in record:
             errors.append(f"missing key: {key}")
-    if "payload" in record and not isinstance(record["payload"], dict):
-        errors.append("payload is not an object")
-    hook = record.get("hook_kind")
-    if hook is not None and hook not in KNOWN_HOOK_KINDS:
-        errors.append(f"unknown hook_kind: {hook!r}")
+    if "model" in record and not isinstance(record["model"], dict):
+        errors.append("model is not an object")
+    if "system" in record and not isinstance(record["system"], list):
+        errors.append("system is not a list")
+    if "messages" in record and not isinstance(record["messages"], list):
+        errors.append("messages is not a list")
+    if "tools" in record and not isinstance(record["tools"], dict):
+        errors.append("tools is not an object")
+    if "options" in record and not isinstance(record["options"], dict):
+        errors.append("options is not an object")
+    kind = record.get("request_kind")
+    if kind is not None and kind not in KNOWN_REQUEST_KINDS:
+        errors.append(f"unknown request_kind: {kind!r}")
+    stage = record.get("capture_stage")
+    if stage is not None and stage != CAPTURE_STAGE_V2:
+        errors.append(f"unexpected capture_stage: {stage!r}")
     return errors
 
 
@@ -94,3 +115,35 @@ def load_capture_dir(directory: Path) -> tuple[list[dict[str, Any]], dict[str, i
         skipped_total += skipped
         files += 1
     return records, {"files": files, "skipped_lines": skipped_total}
+
+
+def canonicalize(value: Any) -> Any:
+    """Canonical form for integrity hashing: object keys sorted
+    recursively, arrays keep order. ASCII-only content keeps this
+    byte-identical with the TypeScript adapter's canonicalize."""
+    if isinstance(value, list):
+        return [canonicalize(item) for item in value]
+    if isinstance(value, dict):
+        return {key: canonicalize(value[key]) for key in sorted(value)}
+    return value
+
+
+def integrity_of(record: dict[str, Any]) -> str:
+    """Expected sha256 over the observed blocks {system, messages,
+    tools, options} with compact separators (matching TypeScript
+    JSON.stringify). Used by tests to pin the golden fixture."""
+    import hashlib
+
+    observed = {
+        "system": record.get("system"),
+        "messages": record.get("messages"),
+        "tools": record.get("tools"),
+        "options": record.get("options"),
+    }
+    return hashlib.sha256(
+        json.dumps(canonicalize(observed), sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
+# Backwards-compatible alias for callers that name the historical V1 symbol.
+BRIDGE_SCHEMA_V1 = BRIDGE_SCHEMA_V1_HISTORICAL

@@ -66,6 +66,7 @@ ROLE_CATEGORIES = (
     "system",
     "user",
     "assistant",
+    "tool_definition",
     "tool_call",
     "tool_result",
     "other",
@@ -83,6 +84,7 @@ def role_of_kind(kind: str) -> str:
         "reasoning_part": "assistant",
         "tool_call": "tool_call",
         "tool_result": "tool_result",
+        "tool_definition": "tool_definition",
         "other_message_part": "other",
     }
     return mapping.get(kind, "other")
@@ -90,8 +92,8 @@ def role_of_kind(kind: str) -> str:
 
 def composition_report(bundles: list[ContextBundle]) -> dict[str, Any]:
     """Share by role category in bytes, chars, and item counts. Tool
-    definitions are UNOBSERVED at the V1 boundary: reported as such,
-    never as zero."""
+    definitions are OBSERVED at the V2 boundary (one item per exposed
+    tool, model-visible description plus JSON schema)."""
     bytes_by_role: Counter[str] = Counter()
     items_by_role: Counter[str] = Counter()
     for bundle in bundles:
@@ -106,10 +108,11 @@ def composition_report(bundles: list[ContextBundle]) -> dict[str, Any]:
         "bytes_by_role": dict(sorted(bytes_by_role.items())),
         "items_by_role": dict(sorted(items_by_role.items())),
         "total_bytes": total,
-        "tool_definitions": UNOBSERVED,
+        "tool_definitions": "observed",
         "tool_definitions_note": (
-            "Tool definitions are not exposed by the OpenCode 1.18.27/V1 "
-            "public hook boundary; unobserved is not zero."
+            "Tool definitions are observed at the OpenCode V2 model-context "
+            "boundary as one item per exposed tool (description plus input "
+            "schema); availability is not utility."
         ),
     }
 
@@ -428,6 +431,45 @@ def tool_result_stats(bundles: list[ContextBundle]) -> dict[str, object]:
         "largest_item_bytes": largest,
         "recurring_bytes": recurring_bytes,
         "distinct_payloads": len(seen),
+    }
+
+
+def tool_definition_stats(bundles: list[ContextBundle]) -> dict[str, object]:
+    """Tool-definition surface: counts, bytes, share, largest item,
+    recurrence. Exposure is availability, never utility: a definition
+    present here was exposed to the request, not necessarily used."""
+    sizes: list[int] = []
+    largest = 0
+    largest_ref: str | None = None
+    seen: set[str] = set()
+    recurring_bytes = 0
+    total_bytes = 0
+    for bundle in bundles:
+        for item in bundle.items:
+            total_bytes += len(item.content.encode("utf-8"))
+            if item.kind != "tool_definition":
+                continue
+            size = len(item.content.encode("utf-8"))
+            sizes.append(size)
+            if size > largest:
+                largest = size
+                largest_ref = item.ref
+            digest = fingerprint(item.content)
+            if digest in seen:
+                recurring_bytes += size
+            else:
+                seen.add(digest)
+    total_tool = sum(sizes)
+    return {
+        "analyser_version": ANALYSER_VERSION,
+        "items": len(sizes),
+        "bytes": total_tool,
+        "share_of_observed_bytes": (total_tool / total_bytes) if total_bytes else 0.0,
+        "size_dist": dist([float(v) for v in sizes]),
+        "largest_item_bytes": largest,
+        "largest_item_ref": largest_ref,
+        "recurring_bytes": recurring_bytes,
+        "distinct_definitions": len(seen),
     }
 
 

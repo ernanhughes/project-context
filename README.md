@@ -90,6 +90,36 @@ Explicitly **not implemented**: behavioural conclusions (pending the
 frozen live run), multi-reader averaging, agent-harness readers,
 ecological prevalence. See `docs/stage-4-report.md`.
 
+## Stage 5 scope (current)
+
+Local, read-only Context Debugger over OpenCode V2 model context (book
+Chapters 1–2, 4, 6, 9–13, 17 observation surface). Implemented:
+
+- V2 capture adapter (`integrations/opencode` 0.2.0) pinned to
+  OpenCode **2.0.16**, V2 plugin API, `@opencode/plugin` **2.0.16**
+  exact: one `project_context.opencode_capture.v2` record per observed
+  model request at `session.hook("context")` (plus kind-tagged
+  compaction/generate records), with assembled system/messages, tool
+  definitions (description plus input schema only), model/agent
+  identity, observed request overrides, and declared model limits where
+  the API yields them. V1 retired: rejected, never coerced.
+- `src/project_context/debugger/`: immutable views, deterministic
+  structural analysis (composition, timeline, compare, recurrence,
+  stable prefix, tool-surface change), deterministic queries (no LLM),
+  and a doctor producing magnitude-only observations under versioned
+  thresholds (`debugger-doctor-policy-v1`).
+- `contextlab debug latest|inspect|timeline|compare|explain|query|doctor`
+  CLI with deterministic text and versioned JSON output, structural by
+  default, raw content only under explicit local flags.
+- V2 golden fixture (`fixtures/opencode-capture-v2/`, SYNTHETIC)
+  shared by TypeScript and Python tests.
+
+Explicitly **not implemented**: pruning, rewriting, compression,
+reordering, tool filtering, automatic optimisation or recommendations,
+compiler insertion into live context, TUI, semantic duplicate
+detection, behavioural utility inference, provider-wire capture. The
+debugger observes; it changes nothing. See `docs/stage-5-report.md`.
+
 ## Setup
 
 Requires Python 3.11+ (3.12+ preferred) and [`uv`](https://docs.astral.sh/uv/).

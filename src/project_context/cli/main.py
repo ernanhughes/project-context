@@ -27,7 +27,7 @@ from project_context.domain.runs import RunManifest
 from project_context.fixtures.base import render_visible_text
 from project_context.fixtures.reference import FIXTURE_ID, get_fixture
 from project_context.opencode.bridge import (
-    BRIDGE_SCHEMA_V1,
+    BRIDGE_SCHEMA_V2,
     load_capture_dir,
     load_capture_file,
     validate_record,
@@ -48,6 +48,7 @@ from project_context.opencode.prevalence import (
     session_bundles,
     session_timeline,
     session_weighted_tool_share,
+    tool_definition_stats,
     tool_result_stats,
 )
 from project_context.runs.artifacts import vcs_info, write_artifact
@@ -309,6 +310,91 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("primary", "transfer"),
         help="Live reader to probe.",
     )
+
+    debug = sub.add_parser("debug", help="Local read-only OpenCode context observability.")
+    debug_sub = debug.add_subparsers(dest="debug_command", required=True)
+
+    def _add_spool(parser: argparse.ArgumentParser) -> None:
+        parser.add_argument(
+            "spool",
+            nargs="?",
+            default=None,
+            help="Capture .jsonl file or spool directory (default: $PROJECT_CONTEXT_SPOOL_DIR).",
+        )
+        parser.add_argument(
+            "--session",
+            default=None,
+            help="Session ordinal (1-based). Defaults to the most recent session.",
+        )
+        parser.add_argument(
+            "--format", choices=("text", "json"), default="text", help="Report format."
+        )
+        parser.add_argument(
+            "--include-auxiliary",
+            action="store_true",
+            help="Include auxiliary requests (compaction/generate) alongside primary ones.",
+        )
+
+    latest_parser = debug_sub.add_parser("latest", help="Latest primary invocation report.")
+    _add_spool(latest_parser)
+
+    inspect_parser = debug_sub.add_parser("inspect", help="Item inventory for one invocation.")
+    _add_spool(inspect_parser)
+    inspect_parser.add_argument("invocation", help="Invocation sequence number within the session.")
+    inspect_parser.add_argument(
+        "--show-content",
+        action="store_true",
+        help="LOCAL ONLY: also print raw item contents. Never use in shared logs.",
+    )
+
+    timeline_parser = debug_sub.add_parser("timeline", help="Structural timeline for a session.")
+    _add_spool(timeline_parser)
+
+    compare_parser = debug_sub.add_parser("compare", help="Compare two invocations.")
+    _add_spool(compare_parser)
+    compare_parser.add_argument("invocation_a", help="First invocation sequence number.")
+    compare_parser.add_argument("invocation_b", help="Second invocation sequence number.")
+
+    explain_parser = debug_sub.add_parser("explain", help="Origin and history for one item.")
+    _add_spool(explain_parser)
+    explain_parser.add_argument("item", help="Item id (use inspect to list item ids).")
+
+    query_parser = debug_sub.add_parser("query", help="Structural query over a session.")
+    _add_spool(query_parser)
+    query_parser.add_argument("--kind", default=None, help="Filter by ingester kind.")
+    query_parser.add_argument(
+        "--category",
+        default=None,
+        choices=(
+            "system",
+            "user",
+            "assistant",
+            "tool_definition",
+            "tool_call",
+            "tool_result",
+            "other",
+        ),
+        help="Filter by debugger category.",
+    )
+    query_parser.add_argument("--min-bytes", type=int, default=None)
+    query_parser.add_argument("--min-tokens", type=int, default=None)
+    query_parser.add_argument(
+        "--repeated", action="store_true", help="Only byte-identical recurring items."
+    )
+    query_parser.add_argument("--introduced-after", type=int, default=None)
+    query_parser.add_argument("--changed", action="store_true")
+    query_parser.add_argument("--contains", default=None, help="LOCAL ONLY substring search.")
+    query_parser.add_argument(
+        "--allow-content-search",
+        action="store_true",
+        help="LOCAL ONLY: permit --contains inspection of raw content.",
+    )
+
+    doctor_parser = debug_sub.add_parser("doctor", help="Context observations (no fixes).")
+    _add_spool(doctor_parser)
+    doctor_parser.add_argument(
+        "--invocation", default=None, help="Restrict to one invocation sequence number."
+    )
     return parser
 
 
@@ -322,7 +408,7 @@ def _load_records(path_str: str) -> tuple[list[dict], dict[str, int]]:
 
 def cmd_opencode_inspect(path_str: str, show_content: bool) -> int:
     records, stats = _load_records(path_str)
-    print(f"bridge schema: {BRIDGE_SCHEMA_V1}")
+    print(f"bridge schema: {BRIDGE_SCHEMA_V2}")
     print(
         f"records: {len(records)} "
         f"(files: {stats['files']}, skipped lines: {stats['skipped_lines']})"
@@ -332,37 +418,35 @@ def cmd_opencode_inspect(path_str: str, show_content: bool) -> int:
     for record in records:
         errors = validate_record(record)
         status = "ok" if not errors else f"INVALID: {errors[0]}"
-        kinds[str(record.get("hook_kind", "?"))] += 1
+        kinds[str(record.get("request_kind", "?"))] += 1
         session = record.get("session_id")
         if isinstance(session, str):
             sessions.add(session)
-        payload = record.get("payload", {})
+        system = record.get("system")
+        messages = record.get("messages")
+        tools = record.get("tools")
         parts = 0
-        if isinstance(payload, dict):
-            messages = payload.get("messages")
-            if isinstance(messages, list):
-                parts = sum(
-                    len(m.get("parts", []))
-                    for m in messages
-                    if isinstance(m, dict) and isinstance(m.get("parts"), list)
-                )
-            system = payload.get("system")
-            if isinstance(system, list):
-                parts = len(system)
-            admission = payload.get("admission")
-            if isinstance(admission, dict):
-                apart = admission.get("parts")
-                if isinstance(apart, list):
-                    parts = len(apart)
+        if isinstance(system, list):
+            parts += len(system)
+        if isinstance(messages, list):
+            parts += len(messages)
+        tool_count = len(tools) if isinstance(tools, dict) else 0
         print(
-            f"- {record.get('capture_id')} [{record.get('hook_kind')}] "
-            f"session={session} parts={parts} {status}"
+            f"- {record.get('capture_id')} [{record.get('request_kind')}] "
+            f"session={session} seq={record.get('invocation_sequence')} "
+            f"blocks={parts} tools={tool_count} {status}"
         )
         if show_content:
             print("  LOCAL-CONTENT-BEGIN")
-            print(json.dumps(payload, indent=2, sort_keys=True)[:4000])
+            print(
+                json.dumps(
+                    {k: record.get(k) for k in ("system", "messages", "tools", "options")},
+                    indent=2,
+                    sort_keys=True,
+                )[:4000]
+            )
             print("  LOCAL-CONTENT-END")
-    print(f"hook kinds: {dict(sorted(kinds.items()))}")
+    print(f"request kinds: {dict(sorted(kinds.items()))}")
     print(f"sessions observed: {len(sessions)}")
     if show_content:
         print("WARNING: raw content printed locally only. Never share this output.")
@@ -869,10 +953,10 @@ def cmd_campaign_create(campaign_id: str, target: int, notes: str) -> int:
     manifest = CampaignManifest(
         campaign_id=campaign_id,
         target_sessions=target,
-        capture_schema=BRIDGE_SCHEMA_V1,
-        capture_stage="opencode.v1.pre_dispatch_partial",
-        opencode_version="1.18.27",
-        adapter_version="0.1.0",
+        capture_schema=BRIDGE_SCHEMA_V2,
+        capture_stage="opencode.v2.model_context",
+        opencode_version="2.0.16",
+        adapter_version="0.2.0",
         started_at=_utcnow(),
         status=STATUS_OPEN,
         sampling_notes=notes,
@@ -938,7 +1022,7 @@ def cmd_corpus_quality(campaign_id: str) -> int:
     hook_union: set[str] = set()
     for session in manifest.sessions:
         hook_union.update(session.hook_kinds)
-    print(f"hook families observed: {sorted(hook_union) or 'none yet'}")
+    print(f"request kinds observed: {sorted(hook_union) or 'none yet'}")
     print(f"compaction observed anywhere: {any(s.compaction_observed for s in manifest.sessions)}")
     print(f"parse warnings total: {sum(s.parse_warnings for s in manifest.sessions)}")
     print(f"exclusions: {len(manifest.exclusions)}")
@@ -1010,6 +1094,7 @@ def cmd_corpus_prevalence_full(
     analysis["prefix_survival"] = survival
     analysis["durations_minutes"] = durations
     analysis["tool_results"] = tool_result_stats(bundles)
+    analysis["tool_definitions"] = tool_definition_stats(bundles)
     analysis["tool_share_weighting"] = session_weighted_tool_share(sessions)
 
     sizes = [bundle_bytes(bundle) for bundle in bundles]
@@ -1019,7 +1104,7 @@ def cmd_corpus_prevalence_full(
 
     analysis["evidence"] = {
         "evidence_kind": "ecological_observation",
-        "capture_boundary": "opencode.v1.pre_dispatch_partial",
+        "capture_boundary": "opencode.v2.model_context",
         "book_result": False,
         "analysis_version": "0.1.0",
         "vcs": vcs_info(Path(".")),
@@ -1075,6 +1160,196 @@ def cmd_corpus_prevalence_full(
             return 3
         print(f"frozen local run at {run_dir}")
     return 0
+
+
+def _default_spool(explicit: str | None) -> str:
+    import os
+
+    if explicit:
+        return explicit
+    env = os.environ.get("PROJECT_CONTEXT_SPOOL_DIR")
+    if env:
+        return env
+    return str(Path.home() / ".local" / "share" / "project-context" / "captures")
+
+
+def _resolve_debug_session(store, selector: str | None) -> tuple[str, int, list]:
+    if not store.session_order:
+        raise ValueError("no sessions in spool")
+    if selector is None:
+        key = store.session_order[-1]
+        return key, len(store.session_order), store.sessions[key]
+    try:
+        ordinal = int(selector)
+    except ValueError:
+        if selector in store.sessions:
+            key = selector
+            return key, store.session_order.index(key) + 1, store.sessions[key]
+        raise ValueError(f"unknown session selector: {selector!r}")
+    if not 1 <= ordinal <= len(store.session_order):
+        raise ValueError(f"session ordinal out of range: {ordinal}")
+    key = store.session_order[ordinal - 1]
+    return key, ordinal, store.sessions[key]
+
+
+def _emit(output_format: str, text: str, doc: dict) -> int:
+    if output_format == "json":
+        print(json.dumps(doc, indent=2, sort_keys=True))
+    else:
+        sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return 0
+
+
+def cmd_debug_latest(
+    spool: str | None, session: str | None, output_format: str, primary_only: bool
+) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.report import report_latest
+
+    store = load_spool(_default_spool(spool), primary_only=primary_only)
+    try:
+        key, ordinal, ordered = _resolve_debug_session(store, session)
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    text, doc = report_latest(key, ordinal, ordered)
+    return _emit(output_format, text, doc)
+
+
+def cmd_debug_inspect(
+    spool: str | None,
+    session: str | None,
+    output_format: str,
+    invocation: str,
+    show_content: bool,
+    primary_only: bool,
+) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.report import report_inspect
+
+    store = load_spool(_default_spool(spool), primary_only=primary_only)
+    try:
+        key, ordinal, ordered = _resolve_debug_session(store, session)
+        text, doc = report_inspect(
+            key, ordinal, ordered, int(invocation), show_content=show_content
+        )
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    return _emit(output_format, text, doc)
+
+
+def cmd_debug_timeline(
+    spool: str | None, session: str | None, output_format: str, primary_only: bool
+) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.report import report_timeline
+
+    store = load_spool(_default_spool(spool), primary_only=primary_only)
+    try:
+        key, ordinal, ordered = _resolve_debug_session(store, session)
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    text, doc = report_timeline(key, ordinal, ordered)
+    return _emit(output_format, text, doc)
+
+
+def cmd_debug_compare(
+    spool: str | None,
+    session: str | None,
+    output_format: str,
+    invocation_a: str,
+    invocation_b: str,
+    primary_only: bool,
+) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.report import report_compare
+
+    store = load_spool(_default_spool(spool), primary_only=primary_only)
+    try:
+        _key, ordinal, ordered = _resolve_debug_session(store, session)
+        text, doc = report_compare(ordinal, ordered, int(invocation_a), int(invocation_b))
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    return _emit(output_format, text, doc)
+
+
+def cmd_debug_explain(
+    spool: str | None, session: str | None, output_format: str, item: str, primary_only: bool
+) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.report import report_explain
+
+    store = load_spool(_default_spool(spool), primary_only=primary_only)
+    try:
+        key, ordinal, ordered = _resolve_debug_session(store, session)
+        text, doc = report_explain(key, ordinal, ordered, item)
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    return _emit(output_format, text, doc)
+
+
+def cmd_debug_query(args) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.query import ContentSearchNotAllowedError, query_items
+    from project_context.debugger.report import report_query
+
+    store = load_spool(_default_spool(args.spool), primary_only=not args.include_auxiliary)
+    try:
+        _key, ordinal, ordered = _resolve_debug_session(store, args.session)
+        results = query_items(
+            ordered,
+            kind=args.kind,
+            category=args.category,
+            min_bytes=args.min_bytes,
+            min_tokens=args.min_tokens,
+            repeated=args.repeated,
+            introduced_after=args.introduced_after,
+            changed=args.changed,
+            contains=args.contains,
+            allow_content_search=args.allow_content_search,
+        )
+    except ContentSearchNotAllowedError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    describe_parts = []
+    for flag in ("kind", "category", "min_bytes", "min_tokens", "introduced_after", "contains"):
+        value = getattr(args, flag)
+        if value is not None:
+            describe_parts.append(f"{flag}={value}")
+    for flag in ("repeated", "changed"):
+        if getattr(args, flag):
+            describe_parts.append(flag)
+    describe = ", ".join(describe_parts) or "all items"
+    text, doc = report_query(ordinal, results, {}, describe)
+    return _emit(args.format, text, doc)
+
+
+def cmd_debug_doctor(
+    spool: str | None,
+    session: str | None,
+    output_format: str,
+    invocation: str | None,
+    primary_only: bool,
+) -> int:
+    from project_context.debugger.analyse import load_spool
+    from project_context.debugger.report import report_doctor
+
+    store = load_spool(_default_spool(spool), primary_only=primary_only)
+    try:
+        _key, ordinal, ordered = _resolve_debug_session(store, session)
+        sequence = int(invocation) if invocation is not None else None
+        text, doc = report_doctor(ordinal, ordered, sequence=sequence)
+    except ValueError as exc:
+        print(f"debug: {exc}", file=sys.stderr)
+        return 2
+    return _emit(output_format, text, doc)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1137,6 +1412,38 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_behavior_validate_run(args.run_dir)
     if args.command == "behavior" and args.behavior_command == "canary":
         return cmd_behavior_canary(args.reader)
+    if args.command == "debug":
+        primary_only = not args.include_auxiliary
+        if args.debug_command == "latest":
+            return cmd_debug_latest(args.spool, args.session, args.format, primary_only)
+        if args.debug_command == "inspect":
+            return cmd_debug_inspect(
+                args.spool,
+                args.session,
+                args.format,
+                args.invocation,
+                args.show_content,
+                primary_only,
+            )
+        if args.debug_command == "timeline":
+            return cmd_debug_timeline(args.spool, args.session, args.format, primary_only)
+        if args.debug_command == "compare":
+            return cmd_debug_compare(
+                args.spool,
+                args.session,
+                args.format,
+                args.invocation_a,
+                args.invocation_b,
+                primary_only,
+            )
+        if args.debug_command == "explain":
+            return cmd_debug_explain(args.spool, args.session, args.format, args.item, primary_only)
+        if args.debug_command == "query":
+            return cmd_debug_query(args)
+        if args.debug_command == "doctor":
+            return cmd_debug_doctor(
+                args.spool, args.session, args.format, args.invocation, primary_only
+            )
     return 2
 
 

@@ -58,3 +58,46 @@ final resolved model defaults, provider usage and cost, response latency
 Assistant-message token/cost fields visible inside stored history describe
 past computations, never the current invocation; the ingester does not
 transfer them into invocation telemetry.
+## Stage 5: OpenCode V2 model-context capture
+
+Observed at the session context hook (V2 assembled request, primary
+agent-loop scope unless a kind filter says otherwise):
+
+```text
+assembled system structure, message order and parts, tool definitions
+(description plus input schema, sorted deterministically), tool results
+with call linkage, session/agent/model identity, invocation sequence,
+observed request overrides, declared model limits where the API yields
+them (else UNAVAILABLE)
+```
+
+Exact local measurements (no model, no network):
+
+```text
+bytes, characters, item counts, content equality via local fingerprints,
+structural prefix equality within one session scope, tool-definition
+counts/bytes/share/stability, per-category composition
+```
+
+Derived or estimated (labelled as such):
+
+```text
+local token estimate (approximation), repetition classifications,
+stable-prefix ratios, growth deltas, deterministic doctor observations
+under debugger-doctor-policy-v1 (magnitude only, never harm/utility)
+```
+
+Unavailable at this boundary unless separately observed (stay None or
+UNAVAILABLE, never zero):
+
+```text
+provider cache hits, wire payload bytes, provider-added prompt material,
+complete effective provider configuration, provider usage and cost,
+response latency
+```
+
+The debugger's request `options` are observed overrides: an empty
+object means no overrides were observed, never that no model defaults
+exist. Deleting or omitting an override falls back to configured
+defaults; the debugger must not present overrides as the resolved
+configuration.

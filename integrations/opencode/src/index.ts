@@ -1,43 +1,74 @@
 /**
- * Context Lab capture plugin for OpenCode V1 (pinned: 1.18.27).
+ * Context Lab capture plugin for OpenCode V2 (pinned: 2.0.16).
  *
- * READ-ONLY. Every hook below copies data out and writes it to a local
- * spool. No hook mutates its input or output. See tests/capture.test.ts
- * for the structural no-mutation proof.
+ * READ-ONLY. The session context hooks below copy the assembled
+ * model-request context out and append it to a local spool. No hook
+ * mutates its event. The debugger later turns these records into
+ * ContextBundle + ModelInvocation views without touching live context.
  *
- * What this observes (and does not observe):
- * - experimental.chat.system.transform: system string array, usually with
- *   sessionID + model. Closest available pre-dispatch system signal.
- * - experimental.chat.messages.transform: message list. NO session/agent/
- *   model identity in this hook (verified against @opencode-ai/plugin
- *   1.18.27 types). Recorded unlinked with the limitation stated.
- * - chat.message: admission inventory (session/agent/model + message).
- * - tool.execute.after: tool result text with session + call linkage.
- *   Input args are deliberately NOT recorded (secret-prone).
+ * What this observes (one record per observed model request):
+ * - session.hook("context"): assembled system/messages/tools/options
+ *   plus session/agent/model identity, immediately before the agent
+ *   model request proceeds. Primary agent-loop scope.
+ * - session.hook("compaction"): checkpoint-summary request. Recorded
+ *   with request_kind "compaction", filtered from primary timelines by
+ *   default. event.result is NEVER set (no intervention).
+ * - session.hook("generate"): transient generate calls, recorded with
+ *   request_kind "generate", filtered from primary timelines by
+ *   default.
  *
- * This is "opencode.v1.pre_dispatch_partial", NOT the assembled provider
- * request. No unified pre-dispatch hook exists on V1.
+ * Capture stage: `opencode.v2.model_context` — the OpenCode V2 semantic
+ * model-request context. This is NOT the byte-for-byte provider HTTP
+ * request: protocol/provider lowering happens after this hook, and
+ * provider-added material, wire representation, and cache decisions
+ * remain unobserved. Reports state this explicitly.
  */
 
-import type { Plugin } from "@opencode-ai/plugin";
+import { Plugin } from "@opencode/plugin";
 import {
   appendRecord,
+  assertSupportedVersion,
   buildRecord,
   captureEnabled,
+  copyBlock,
   defaultSpoolDir,
   newCaptureId,
   nowIso,
-  type RecordInput,
 } from "./capture.ts";
-import type { BridgeRecord, HookKind, ModelRef } from "./schema.ts";
+import type { ModelLimits, ModelRef, RequestKind } from "./schema.ts";
 
 type Env = Record<string, string | undefined>;
 
+type SessionContextEvent = {
+  sessionID: string;
+  agent: string;
+  model: { providerID: string; id: string; variant?: string };
+  system: unknown;
+  messages: unknown;
+  tools: Record<string, { description: string; input: unknown }>;
+  options: Record<string, unknown>;
+};
+
+type PluginContext = {
+  app: { version: string };
+  model: {
+    get: (input: { providerID: string; modelID: string }) => Promise<{
+      limit?: { context?: number; output?: number };
+    } | null>;
+  };
+  session: {
+    hook: (
+      name: "context" | "compaction" | "generate",
+      callback: (event: SessionContextEvent) => void | Promise<void>,
+    ) => Promise<{ dispose: () => Promise<void> }>;
+  };
+};
+
 const sequences = new Map<string, number>();
 
-function nextSequence(scope: string): number {
-  const next = (sequences.get(scope) ?? 0) + 1;
-  sequences.set(scope, next);
+function nextSequence(sessionID: string): number {
+  const next = (sequences.get(sessionID) ?? 0) + 1;
+  sequences.set(sessionID, next);
   return next;
 }
 
@@ -55,117 +86,87 @@ function toModelRef(raw: unknown): ModelRef | null {
   };
 }
 
-function asString(value: unknown): string | null {
-  return typeof value === "string" ? value : null;
+async function readModelLimits(
+  ctx: PluginContext,
+  model: { providerID: string; id: string },
+): Promise<ModelLimits | null> {
+  try {
+    const info = await ctx.model.get({
+      providerID: model.providerID,
+      modelID: model.id,
+    });
+    const context = info?.limit?.context;
+    const output = info?.limit?.output;
+    if (typeof context !== "number" && typeof output !== "number") return null;
+    return {
+      context: typeof context === "number" ? context : null,
+      output: typeof output === "number" ? output : null,
+      source: "ctx.model",
+    };
+  } catch {
+    // Model metadata unavailable at capture time: UNAVAILABLE is
+    // correct. Never hard-code capacities, never infer from names.
+    return null;
+  }
 }
 
-function emit(
-  env: Env,
-  partial: Omit<RecordInput, "captured_at" | "capture_id">,
-): BridgeRecord | null {
-  if (!captureEnabled(env)) return null;
-  const serializeStart = performance.now();
-  const capturedAt = nowIso();
-  const record = buildRecord({
-    ...partial,
-    captured_at: capturedAt,
-    capture_id: newCaptureId(),
-  });
-  const serializeMs = performance.now() - serializeStart;
-  const writeMs = appendRecord(defaultSpoolDir(env), record);
-  record.timings_ms = {
-    serialize: serializeMs,
-    write: writeMs,
-    total: serializeMs + writeMs,
-  };
-  return record;
-}
+export default Plugin.define({
+  id: "context-debugger-capture",
+  async setup(ctx) {
+    const pluginCtx = ctx as unknown as PluginContext;
+    assertSupportedVersion(pluginCtx.app.version);
+    const env = process.env as Env;
+    if (!captureEnabled(env)) return;
 
-export const ContextLabCapture = async (
-  _ctx: unknown,
-  env: Env = process.env,
-) => {
-  if (!captureEnabled(env)) return {};
-  return {
-    "experimental.chat.system.transform": async (
-      input: {
-        sessionID?: string;
-        model?: unknown;
-      },
-      output: { system: unknown },
-    ) => {
-      const sessionID = asString(input.sessionID);
-      const scope = sessionID ?? "unlinked";
-      emit(env, {
-        hook_kind: "system.transform" as HookKind,
+    const capture = async (kind: RequestKind, event: SessionContextEvent) => {
+      // READ-ONLY: copy blocks out first; the event is never written.
+      const system = copyBlock(event.system);
+      const messages = copyBlock(event.messages);
+      const tools = copyBlock(event.tools) as Record<string, unknown>;
+      const options = copyBlock(event.options) as Record<string, unknown>;
+      const serializeStart = performance.now();
+      const capturedAt = nowIso();
+      const sessionID =
+        typeof event.sessionID === "string" ? event.sessionID : null;
+      const model = toModelRef(event.model);
+      const limits =
+        model && model.provider_id && model.id
+          ? await readModelLimits(pluginCtx, {
+              providerID: model.provider_id,
+              id: model.id,
+            })
+          : null;
+      const record = buildRecord({
+        request_kind: kind,
         session_id: sessionID,
-        agent: null,
-        model: toModelRef(input.model),
-        sequence_scope: scope,
-        sequence_index: nextSequence(scope),
-        payload: { system: output.system },
+        invocation_sequence: nextSequence(sessionID ?? "unlinked"),
+        agent: typeof event.agent === "string" ? event.agent : null,
+        model,
+        model_limits: limits,
+        system,
+        messages,
+        tools,
+        options,
+        captured_at: capturedAt,
+        capture_id: newCaptureId(),
       });
-    },
-    "experimental.chat.messages.transform": async (
-      _input: unknown,
-      output: { messages: unknown },
-    ) => {
-      emit(env, {
-        hook_kind: "messages.transform" as HookKind,
-        session_id: null,
-        agent: null,
-        model: null,
-        sequence_scope: "unlinked",
-        sequence_index: nextSequence("unlinked"),
-        payload: { messages: output.messages },
-      });
-    },
-    "chat.message": async (
-      input: {
-        sessionID: string;
-        agent?: string;
-        model?: unknown;
-        messageID?: string;
-      },
-      output: { message: unknown; parts: unknown },
-    ) => {
-      const scope = input.sessionID;
-      emit(env, {
-        hook_kind: "chat.message" as HookKind,
-        session_id: scope,
-        agent: asString(input.agent),
-        model: toModelRef(input.model),
-        sequence_scope: scope,
-        sequence_index: nextSequence(scope),
-        payload: {
-          admission: { message: output.message, parts: output.parts },
-        },
-      });
-    },
-    "tool.execute.after": async (
-      input: { tool: string; sessionID: string; callID: string },
-      output: { title: unknown; output: unknown; metadata: unknown },
-    ) => {
-      const scope = input.sessionID;
-      emit(env, {
-        hook_kind: "tool.execute.after" as HookKind,
-        session_id: scope,
-        agent: null,
-        model: null,
-        sequence_scope: scope,
-        sequence_index: nextSequence(scope),
-        payload: {
-          tool_result: {
-            tool: input.tool,
-            callID: input.callID,
-            title: output.title,
-            output: output.output,
-            metadata: output.metadata,
-          },
-        },
-      });
-    },
-  };
-};
+      const serializeMs = performance.now() - serializeStart;
+      const writeMs = appendRecord(defaultSpoolDir(env), record);
+      record.timings_ms = {
+        serialize: serializeMs,
+        write: writeMs,
+        total: serializeMs + writeMs,
+      };
+    };
 
-export const ContextLabCapturePlugin: Plugin = ContextLabCapture as Plugin;
+    await pluginCtx.session.hook("context", (event) =>
+      capture("context", event),
+    );
+    await pluginCtx.session.hook("compaction", (event) =>
+      capture("compaction", event),
+    );
+    await pluginCtx.session.hook("generate", (event) =>
+      capture("generate", event),
+    );
+  },
+});
