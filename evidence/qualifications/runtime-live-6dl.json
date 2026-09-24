@@ -1,0 +1,78 @@
+{
+  "qualification_id": "runtime-live-6dl",
+  "purpose": "live integration qualification",
+  "synthetic": true,
+  "verdict": "FAIL",
+  "attempt": 2,
+  "runtime_implementation": {
+    "git_revision": "a357c69e03aeb1a16ee2d8b98f348d645d56078b",
+    "git_status_runtime": "",
+    "deployed_hashes": {
+      "observer/index.ts": "2B4B9AE7EB4B897434E48F75A77F8E3FDC4E44BB85989B4593257654716A0563",
+      "observer/capture.ts": "B46A905DF96B4044A945487D7F2EFB231CC13F2012067012D9DF5AFCF5EE6EE5",
+      "observer/schema.ts": "B231AB3B2169E8895DE40AFDF45F3C476D76C778C57081294443D5C8EABA4730",
+      "observer/sequence.ts": "71DB7E396B39FE0F424EC087F4FB89A58994A537110D2D4CCB43BEBE8A3F2341",
+      "runtime/runtime.ts": "0F19A9E92F59F72DCA374C159003C81325EE98445D07654D9EFE0EB0AD952F8A",
+      "runtime/blocks.ts": "B60C81B204C12F1925D0D4E8C7BC746D859C9D3AAE63DA9BF85D0AADF1D96348"
+    }
+  },
+  "opencode_environment": {
+    "opencode_version": "2.0.16",
+    "observer_plugin_version": "0.3.0",
+    "runtime_plugin_version": "0.1.0"
+  },
+  "selected_bundle": {
+    "bundle_id": "rt-live-probe-6dl",
+    "bundle_digest": "acb8166b1289907bcb24134bc7f1235730b0d0e53f156b5e61f0785add2c7ae0"
+  },
+  "rendered_block": {
+    "policy_id": "runtime-render-v1",
+    "digest": "9847fda76ef23830608566492c2dfa7e49f40d22412c084e12230f3567c3cca1",
+    "text": "[CONTEXT RUNTIME]\n[TEST CONSTRAINT]\nRUNTIME-LIVE-PROBE-6D-L\nFor this synthetic qualification request only,\nthe marker value is ORANGE-QUARTZ-731.\n[/CONTEXT RUNTIME]"
+  },
+  "expected_marker": "ORANGE-QUARTZ-731",
+  "injection_location": "system-append",
+  "run": {
+    "exit_code": 0,
+    "hook_error": false,
+    "model_response_digest": "f5ab9717bb6de723c8404b9309f909b15c0a55f44b1083e3d094f4fe9aa5d445",
+    "run_log_digest": "f5ab9717bb6de723c8404b9309f909b15c0a55f44b1083e3d094f4fe9aa5d445"
+  },
+  "observed": {
+    "new_records_total": 1,
+    "new_context_records": 1,
+    "records": [
+      {
+        "capture_id": "6bbe9658-190f-4add-9cd4-a2a54307288f",
+        "request_kind": "context",
+        "session_id": "ses_f2b8d3546ffeOUhhypaspJ0qr2",
+        "record_valid": true,
+        "system_blocks": 4,
+        "marker_occurrences": 0,
+        "unexpected_runtime_blocks": 0,
+        "checks": {
+          "record_valid": true,
+          "markers_present": false,
+          "block_exact": false,
+          "block_once": false,
+          "order_preserved": false,
+          "no_unexpected_runtime_content": true,
+          "integrity_match": true
+        },
+        "passed": false
+      }
+    ]
+  },
+  "required": {
+    "runtime_opted_in_explicitly": true,
+    "run_clean": true,
+    "observer_captured": true,
+    "all_context_records_pass": false,
+    "no_marker_outside_context_records": true
+  },
+  "limitations": [
+    "TypeScript runtime emits no machine injection receipt; acceptance is evidenced by a clean run plus the independent capture.",
+    "Observation is at the OpenCode V2 model-context hook, not the provider wire request.",
+    "Model response is diagnostic only, never the criterion."
+  ]
+}
