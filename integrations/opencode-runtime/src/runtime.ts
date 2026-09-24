@@ -25,6 +25,7 @@
 
 import { Plugin } from "@opencode/plugin";
 import { findExactBlock, findRuntimeBlocks } from "./blocks.ts";
+import { traceHook, traceSetup } from "./trace.ts";
 import { readFileSync } from "node:fs";
 
 type SessionContextEvent = {
@@ -60,21 +61,44 @@ export default Plugin.define({
   id: "context-runtime-injection",
   async setup(ctx) {
     if (process.env["PROJECT_CONTEXT_RUNTIME"] !== "inject") return;
+    traceSetup("context-runtime-injection");
     const pluginCtx = ctx as unknown as PluginContext;
     const blockPath = process.env["PROJECT_CONTEXT_RUNTIME_BLOCK"];
     await pluginCtx.session.hook("context", (_event) => {
       const event = _event;
-      const text = loadBlock(blockPath);
+      const sessionID =
+        typeof event.sessionID === "string" ? event.sessionID : null;
+      const agent = typeof event.agent === "string" ? event.agent : null;
+      const preBlocks = Array.isArray(event.system) ? event.system.length : -1;
+      const finish = (
+        outcome: Parameters<typeof traceHook>[0]["outcome"],
+        postBlocks: number,
+      ): void => {
+        traceHook({ sessionID, agent, preBlocks, postBlocks, outcome });
+      };
+      let text: string;
+      try {
+        text = loadBlock(blockPath);
+      } catch (err) {
+        finish("error_load_block", preBlocks);
+        throw err;
+      }
       if (!Array.isArray(event.system)) {
+        finish("error_unsupported_shape", preBlocks);
         throw new Error("unsupported request shape: system is not an array");
       }
       const marked = findRuntimeBlocks(event.system);
       if (marked.length > 0) {
-        if (findExactBlock(event.system, text) >= 0) return; // idempotent
+        if (findExactBlock(event.system, text) >= 0) {
+          finish("noop_idempotent", preBlocks);
+          return; // idempotent
+        }
+        finish("failed_conflict", preBlocks);
         throw new Error("injection_conflict: a different runtime block is present");
       }
       const next = [...event.system, { type: "text", text }];
       event.system = next;
+      finish("injected", next.length);
     });
   },
 });

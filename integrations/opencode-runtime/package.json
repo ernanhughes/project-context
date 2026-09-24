@@ -9,7 +9,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/blocks.test.ts",
+    "test": "node --test tests/blocks.test.ts tests/entry.test.ts tests/trace.test.ts",
     "lint": "prettier --check .",
     "format": "prettier --write ."
   },
