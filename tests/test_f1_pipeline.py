@@ -1,7 +1,7 @@
-"""F1 pipeline: strata, shape cards, routing triggers, ledger, and the privacy dry run.
+"""F1 pipeline: strata, shape cards, routing triggers, session index, and the privacy dry run.
 
-Everything here is synthetic. Nothing enters the ecological corpus: the ledgers built in
-these tests are dry-run ledgers in a temporary directory.
+Everything here is synthetic. Nothing enters the ecological corpus: the indexes built in
+these tests are dry-run indexes in a temporary directory.
 """
 
 import inspect
@@ -13,8 +13,13 @@ from project_context.corpus import f1_pipeline, routing, strata
 from project_context.corpus.completeness import UNOBSERVED
 from project_context.corpus.f1_analysis import analyse_session, dumps
 from project_context.corpus.f1_pipeline import derivative_bytes, process_session
-from project_context.corpus.ledger import DRY_RUN, ECOLOGICAL, Ledger, LedgerError
 from project_context.corpus.privacy import gate, scan_raw, validate_l1
+from project_context.corpus.session_index import (
+    DRY_RUN,
+    ECOLOGICAL,
+    SessionIndex,
+    SessionIndexError,
+)
 from project_context.corpus.shapecards import SHAPES, catalogue, derive_cards, validate_card
 from project_context.corpus.synthetic import (
     PLANTED,
@@ -28,8 +33,8 @@ from project_context.corpus.synthetic import (
     long_session,
     no_tools_session,
     privacy_session,
-    rewrite_session,
     repeated_test_run_session,
+    rewrite_session,
 )
 
 PLANTED_TOKEN_MIN = 8
@@ -41,8 +46,8 @@ SIDECAR = {
 }
 
 
-def dry_ledger(tmp_path):
-    return Ledger.create(tmp_path / "ledger.json", DRY_RUN, "dry-run-campaign")
+def dry_index(tmp_path):
+    return SessionIndex.create(tmp_path / "session-index.json", DRY_RUN, "dry-run-campaign")
 
 
 # ------------------------------------------------------------------------------ strata
@@ -275,51 +280,58 @@ def test_the_prefix_line_can_be_moved_to_see_how_much_the_answer_depends_on_it()
     assert out["line_lower"] >= out["line_as_registered"] >= out["line_higher"]
 
 
-# ------------------------------------------------------------------------------ ledger
-def test_ledger_keeps_dry_runs_out_of_the_corpus(tmp_path):
-    dry = dry_ledger(tmp_path)
+# ------------------------------------------------------------------------------ session index
+def test_session_index_keeps_dry_runs_out_of_the_corpus(tmp_path):
+    dry = dry_index(tmp_path)
     out = process_session(
-        privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, ledger=dry
+        privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, session_index=dry
     )
-    assert out.ledger_ordinal == 1 and dry.kind == DRY_RUN
-    with pytest.raises(LedgerError):
-        Ledger.load(tmp_path / "ledger.json", ECOLOGICAL)
-    eco = Ledger.create(tmp_path / "eco.json", ECOLOGICAL, "campaign")
-    with pytest.raises(LedgerError):
+    assert out.session_ordinal == 1 and dry.kind == DRY_RUN
+    with pytest.raises(SessionIndexError):
+        SessionIndex.load(tmp_path / "session-index.json", ECOLOGICAL)
+    eco = SessionIndex.create(tmp_path / "eco.json", ECOLOGICAL, "campaign")
+    with pytest.raises(SessionIndexError):
         process_session(
-            privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, ledger=eco
+            privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, session_index=eco
         )
-    with pytest.raises(LedgerError):
+    with pytest.raises(SessionIndexError):
         process_session(
-            growth_session()[0], session_key="synthetic-growth", sidecar=SIDECAR, ledger=eco
+            growth_session()[0], session_key="synthetic-growth", sidecar=SIDECAR, session_index=eco
         )
     assert eco.entries == []
-    assert Ledger.load(tmp_path / "eco.json", ECOLOGICAL).entries == []
+    assert SessionIndex.load(tmp_path / "eco.json", ECOLOGICAL).entries == []
 
 
-def test_a_genuine_looking_key_cannot_enter_a_dry_run_ledger(tmp_path):
-    dry = dry_ledger(tmp_path)
-    with pytest.raises(LedgerError):
+def test_a_genuine_looking_key_cannot_enter_a_dry_run_index(tmp_path):
+    dry = dry_index(tmp_path)
+    with pytest.raises(SessionIndexError):
         process_session(
-            growth_session()[0], session_key="ses-real-looking", sidecar=SIDECAR, ledger=dry
+            growth_session()[0],
+            session_key="ses-real-looking",
+            sidecar=SIDECAR,
+            session_index=dry,
         )
 
 
 def test_sidecar_is_a_closed_vocabulary(tmp_path):
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     for bad in (
         {"note": "free text"},
         {"task_type": "make it faster please"},
         {"has_tests": "yes"},
     ):
-        with pytest.raises(LedgerError):
-            process_session(growth_session()[0], session_key="synthetic-x", sidecar=bad, ledger=dry)
+        with pytest.raises(SessionIndexError):
+            process_session(
+                growth_session()[0], session_key="synthetic-x", sidecar=bad, session_index=dry
+            )
 
 
 def test_incomplete_sessions_are_excluded_with_a_reason_and_still_recorded(tmp_path):
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     records = growth_session()[0]
-    out = process_session(records[1:], session_key="synthetic-gap", sidecar=SIDECAR, ledger=dry)
+    out = process_session(
+        records[1:], session_key="synthetic-gap", sidecar=SIDECAR, session_index=dry
+    )
     assert out.excluded and out.exclusion_reason == "capture_incomplete" and out.l1 is None
     row = dry.entries[0]
     assert row.excluded and not row.derivative_present and not row.complete
@@ -328,22 +340,24 @@ def test_incomplete_sessions_are_excluded_with_a_reason_and_still_recorded(tmp_p
 
 
 def test_withdrawal_is_recorded_not_deleted(tmp_path):
-    dry = dry_ledger(tmp_path)
-    process_session(growth_session()[0], session_key="synthetic-w", sidecar=SIDECAR, ledger=dry)
+    dry = dry_index(tmp_path)
+    process_session(
+        growth_session()[0], session_key="synthetic-w", sidecar=SIDECAR, session_index=dry
+    )
     assert len(dry.usable()) == 1
     dry.withdraw(1)
     assert dry.usable() == [] and dry.entries[0].withdrawn and len(dry.entries) == 1
-    with pytest.raises(LedgerError):
+    with pytest.raises(SessionIndexError):
         dry.exclude(1, "it looked boring")
 
 
 def test_public_projection_carries_no_identity_time_or_digest(tmp_path):
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     process_session(
-        privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, ledger=dry
+        privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, session_index=dry
     )
     process_session(
-        growth_session()[0], session_key="synthetic-growth", sidecar=SIDECAR, ledger=dry
+        growth_session()[0], session_key="synthetic-growth", sidecar=SIDECAR, session_index=dry
     )
     public = json.dumps(dry.public_projection())
     for private in (
@@ -362,18 +376,20 @@ def test_public_projection_carries_no_identity_time_or_digest(tmp_path):
 
 
 def test_stopping_rule_and_natural_absence(tmp_path):
-    dry = dry_ledger(tmp_path)
-    process_session(growth_session()[0], session_key="synthetic-a", sidecar=SIDECAR, ledger=dry)
+    dry = dry_index(tmp_path)
+    process_session(
+        growth_session()[0], session_key="synthetic-a", sidecar=SIDECAR, session_index=dry
+    )
     status = dry.stopping_status(weeks_elapsed=1)
     assert not status["stop"] and status["usable"] == 1
     assert "S3" in status["naturally_absent"] and "S5" in status["achievable_strata"]
     assert dry.stopping_status(weeks_elapsed=10)["because"] == ["ten calendar weeks"]
 
 
-def test_a_ledger_is_created_once(tmp_path):
-    dry_ledger(tmp_path)
-    with pytest.raises(LedgerError):
-        dry_ledger(tmp_path)
+def test_a_session_index_is_created_once(tmp_path):
+    dry_index(tmp_path)
+    with pytest.raises(SessionIndexError):
+        dry_index(tmp_path)
 
 
 # ------------------------------------------------------------------------------ privacy dry run
@@ -390,12 +406,12 @@ def planted_fragments():
 
 
 def test_the_planted_session_is_seen_by_the_scan_and_excluded(tmp_path):
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     out = process_session(
-        privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, ledger=dry
+        privacy_session(), session_key="dry-run-ses-7f3a91", sidecar=SIDECAR, session_index=dry
     )
     assert out.excluded and out.exclusion_reason == "secret_or_identifier_hit"
-    assert out.l1 is None and out.stage_reached == "ledger"
+    assert out.l1 is None and out.stage_reached == "session_index"
     creds = out.scan.credentials
     for name in (
         "secret-pattern-1",
@@ -412,12 +428,12 @@ def test_the_planted_session_is_seen_by_the_scan_and_excluded(tmp_path):
 
 def test_no_planted_material_reaches_the_derivative_even_when_the_scan_is_bypassed(tmp_path):
     """Defence in depth: build the derivative anyway and check it against every plant."""
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     out = process_session(
         privacy_session(),
         session_key="dry-run-ses-7f3a91",
         sidecar=SIDECAR,
-        ledger=dry,
+        session_index=dry,
         force_derivative=True,
         sensitive_terms=("contoso", "jdoe", "Priya Ramanathan"),
     )
@@ -437,29 +453,31 @@ def test_no_planted_material_reaches_the_derivative_even_when_the_scan_is_bypass
     ):
         assert lowered not in blob.lower(), lowered
     assert validate_l1(out.l1) == []
-    assert out.excluded  # still excluded from analysis: the bypass never changes the ledger verdict
+    assert out.excluded  # still excluded from analysis: the bypass never changes the index verdict
     assert not out.gate.publishable  # clean content is necessary, not sufficient
     assert dry.usable() == []
 
 
 def test_a_secret_the_scanner_cannot_recognise_still_cannot_reach_the_derivative(tmp_path):
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     records = privacy_session(with_blind_spot_only=True)
     scan = scan_raw(records)
     assert not scan.excludes_session  # the scan is blind to it, on purpose
-    out = process_session(records, session_key="dry-run-ses-blind", sidecar=SIDECAR, ledger=dry)
+    out = process_session(
+        records, session_key="dry-run-ses-blind", sidecar=SIDECAR, session_index=dry
+    )
     assert not out.excluded and out.gate.content_clean
     blob = derivative_bytes(out).decode("ascii")
     assert SCANNER_BLIND_SPOT not in blob and "passphrase" not in blob
 
 
 def test_publication_needs_clean_content_and_a_recorded_approval(tmp_path):
-    dry = dry_ledger(tmp_path)
+    dry = dry_index(tmp_path)
     out = process_session(
         privacy_session(with_blind_spot_only=True),
         session_key="dry-run-ses-b",
         sidecar=SIDECAR,
-        ledger=dry,
+        session_index=dry,
     )
     assert out.gate.content_clean and not out.gate.publishable
     approved = gate(out.l1, privacy_session(with_blind_spot_only=True), out.scan, approved=True)
@@ -532,7 +550,7 @@ def test_stage_names_are_the_documented_pipeline():
         "reconciliation",
         "publication_gate",
         "shape_cards",
-        "ledger",
+        "session_index",
     )
 
 
@@ -545,3 +563,97 @@ def test_the_preregistration_states_the_same_routing_values_as_the_code():
     for word in ("activation threshold", "effect threshold", "success criterion", "borderline"):
         assert word in text
     assert "Decision triggers" not in text
+
+
+# ------------------------------------------------------------------------------ calibration
+def test_a_calibration_session_can_use_only_the_calibration_index(tmp_path):
+    from project_context.corpus.session_index import CALIBRATION, SessionIndex, SessionIndexError
+
+    records = growth_session()[0]
+    calibration = SessionIndex.create(tmp_path / "cal.json", CALIBRATION, "cal")
+    out = process_session(
+        records, session_key="calibration-01", sidecar=SIDECAR, session_index=calibration
+    )
+    assert out.session_ordinal == 1 and calibration.kind == CALIBRATION
+    eco = SessionIndex.create(tmp_path / "eco.json", ECOLOGICAL, "campaign")
+    with pytest.raises(SessionIndexError):
+        process_session(records, session_key="calibration-02", sidecar=SIDECAR, session_index=eco)
+    dry = SessionIndex.create(tmp_path / "dry.json", DRY_RUN, "dry")
+    with pytest.raises(SessionIndexError):
+        process_session(records, session_key="calibration-03", sidecar=SIDECAR, session_index=dry)
+    with pytest.raises(SessionIndexError):
+        SessionIndex.load(tmp_path / "cal.json", ECOLOGICAL)
+    assert eco.entries == [] and dry.entries == []
+
+
+def test_the_registry_refuses_a_session_whatever_key_it_arrives_under(tmp_path):
+    from project_context.corpus.session_index import SessionIndex, SessionIndexError
+
+    records = growth_session()[0]
+    eco = SessionIndex.create(tmp_path / "eco.json", ECOLOGICAL, "campaign")
+    with pytest.raises(SessionIndexError):
+        process_session(
+            records,
+            session_key="ses-genuine-looking",
+            sidecar=SIDECAR,
+            session_index=eco,
+            refuse_session_ids=frozenset({records[0]["session_id"]}),
+        )
+    assert eco.entries == []
+
+
+def test_t3_reports_three_bases_and_names_the_one_near_the_line():
+    def sessions(measured, bytes_est, words):
+        return [
+            sess(
+                window_fraction_max_measured=m,
+                window_fraction_max_bytes_estimate=b_,
+                window_fraction_max_word_estimate=w,
+            )
+            for m, b_, w in zip(measured, bytes_est, words)
+        ]
+
+    # The second-highest session is what counts, so a single high session is not enough.
+    data = sessions([0.90, 0.20, 0.10], [0.95, 0.20, 0.10], [0.60, 0.10, 0.05])
+    r = by_name(routing.evaluate(data, [False] * 3))["T3_externalise_recall"]
+    assert r.basis == "measured" and r.status == routing.NOT_TRIGGERED
+    assert set(r.other_bases) == {"bytes_estimate", "word_estimate"}
+    assert r.observed_value == 0.20 and r.band == "clear" and r.borderline_bases == []
+
+
+def test_t3_prefers_the_measured_basis_and_falls_back_when_usage_is_missing():
+    measured = [0.7, 0.65, 0.2]
+    est = [0.5, 0.4, 0.1]
+    both = [
+        sess(
+            window_fraction_max_measured=m,
+            window_fraction_max_bytes_estimate=e,
+            window_fraction_max_word_estimate=e / 2,
+        )
+        for m, e in zip(measured, est)
+    ]
+    r = by_name(routing.evaluate(both, [False] * 3))["T3_externalise_recall"]
+    assert r.basis == "measured" and r.status == routing.TRIGGERED
+    assert r.other_bases["bytes_estimate"]["status"] == routing.NOT_TRIGGERED  # disagreement kept
+    none_measured = [dict(s, window_fraction_max_measured=UNOBSERVED) for s in both]
+    r = by_name(routing.evaluate(none_measured, [False] * 3))["T3_externalise_recall"]
+    assert (
+        r.basis == "bytes_estimate" and r.other_bases["measured"]["status"] == routing.NOT_EVALUABLE
+    )
+
+
+def test_a_borderline_t3_names_which_estimate_put_it_there():
+    data = [
+        sess(
+            window_fraction_max_measured=UNOBSERVED,
+            window_fraction_max_bytes_estimate=v,
+            window_fraction_max_word_estimate=v * 0.6,
+        )
+        for v in (0.58, 0.20, 0.10)
+    ]
+    r = by_name(routing.evaluate(data, [False] * 3))["T3_externalise_recall"]
+    assert r.status == routing.NOT_TRIGGERED
+    assert r.observed_value == 0.20 and r.borderline_bases == []  # second-highest is far below
+    near = [dict(s, window_fraction_max_bytes_estimate=v) for s, v in zip(data, (0.9, 0.55, 0.1))]
+    r = by_name(routing.evaluate(near, [False] * 3))["T3_externalise_recall"]
+    assert r.band == "borderline" and r.borderline_bases == ["bytes_estimate"]

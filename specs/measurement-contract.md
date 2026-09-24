@@ -176,3 +176,23 @@ Measured before behaviour, so that "destroyed" and "not used" can be told apart.
 New metrics use `<family>:<term>` in `EvaluationObservation.metric`, matching the
 existing `hold_release:task_score` style, where the term is one of the names
 above.
+
+## Repetition, and what is not observed
+
+Two quantities are easy to confuse and are kept apart everywhere they appear.
+
+| Term | Definition |
+|---|---|
+| carry-over | material legitimately re-supplied across requests: a part the previous request already held, matched part for part. Expected in any session; never called redundant |
+| redundant payload | the same tool output appearing more than once inside one request (identical bytes, at least 32 bytes). A second copy of something the previous request held once is new material, not carry-over |
+
+A smaller number of repeated bytes is not evidence of lower cost, and repeated bytes are not
+evidence of harm. Only the second is a candidate for later experiments.
+
+`UNOBSERVED` marks a quantity the instrument cannot determine. It is never converted to zero, and
+an aggregate states how many sessions it used and how many were unobserved. A session that exposes
+no tool-definition material has an unobserved definition share, not a zero one. Values read from
+the harness's own record after the fact are labelled JOINED and are used only when they line up
+with the capture request for request. Any stable-prefix figure rests on an assumed render order,
+which is stored with it and labelled a proxy; it can route a cache experiment but says nothing
+about provider caching by itself. Full definitions: `specs/f1-capture-completeness.md`.

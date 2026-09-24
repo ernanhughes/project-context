@@ -1,7 +1,7 @@
 ---
 family: F1
 title: Ecological observation corpus
-version: 2
+version: 3
 status: draft
 depends_on: []
 model_calls: none
@@ -11,7 +11,7 @@ model_calls: none
 
 Status: **draft, not frozen, nothing captured.** No genuine session has been
 captured, and none should be until this is reviewed and frozen. The capture
-machinery, the ledger and the dry runs exist and pass on synthetic data only.
+machinery, the session index and the dry runs exist and pass on synthetic data only.
 
 ## Question
 
@@ -36,7 +36,7 @@ Sub-questions, each answered per session:
 - **Q6 Prefix stability.** How much of each request matches the previous one under a
   stated render order, and what breaks it first?
 - **Q7 Freshness evidence.** Does the capture expose enough to study staleness at
-  all (the same tool and title returning different bytes; version information)?
+  all (the same call returning different bytes; version information)?
 - **Q8 Pressure.** How close do sessions come to the model's window, and do
   compaction or rewrites occur?
 
@@ -90,13 +90,13 @@ number of **secondary tags**, from what was observed, not from what was intended
 | Stratum | Operational definition | Basis |
 |---|---|---|
 | S1 short question | 1–3 model requests, no file edit | observed |
-| S2 single-file repair | edits exactly one file, up to 15 requests | proxy: distinct titles of edit-tool results |
-| S3 multi-file repair | edits three or more files | proxy: distinct titles of edit-tool results |
-| S4 test/debug loop | three or more test-runner tool calls | proxy: recognised from the command title |
+| S2 single-file repair | edits exactly one file, up to 15 requests | derived: distinct paths in the arguments of edit-tool calls |
+| S3 multi-file repair | edits three or more files | derived: distinct paths in the arguments of edit-tool calls |
+| S4 test/debug loop | three or more test-runner tool calls | derived: shell-tool calls whose command is a recognised test runner |
 | S5 tool-heavy investigation | tool results are over half of the rendered bytes at the last request | observed |
 | S6 long-running | 40 or more requests, or a compaction record observed | observed |
 | S7 project instructions | the author declares project instructions were present | declared (sidecar; origin is never inferred from text) |
-| S8 stale or re-read material | the same tool and title returns different bytes later in the session | proxy; tool arguments are not captured, so two different calls with one title also qualify |
+| S8 stale or re-read material | the same call (tool and arguments) returns different bytes later in the session, and both results remain | derived; a re-run whose state changed also qualifies, so this shows an older result surviving, not that it is wrong |
 
 **Target:** 24 usable sessions, at least 3 in each achievable stratum, at most 30 in
 total and at most 6 whose primary label is the same stratum. At least 3 different
@@ -117,7 +117,7 @@ Instrument controls, checked before each capture block:
 0. The synthetic dry runs pass: the privacy dry run (no planted material reaches a
    derivative, whether or not the scan noticed it) and the measurement dry run (every
    reported quantity matches a value worked out by hand). Synthetic sessions never
-   enter the corpus; the ledger for dry runs cannot be opened as the corpus.
+   enter the corpus; the session index for dry runs cannot be opened as the corpus.
 1. The golden-fixture reconciliation test passes.
 2. Per session, the derivative reconciles with its source by an independent recount
    (exact bytes and part counts). Token counts are approximations and labelled so.
@@ -133,24 +133,32 @@ has one status, held in code and tested:
 
 - **OBSERVED**: read directly from the record.
 - **DERIVED**: computed deterministically from observed material.
+- **JOINED**: read from the harness's own local record and joined to the session
+  afterwards, read-only and from one table, so it was not seen at the capture boundary.
 - **PROXY**: a stand-in for the thing wanted, named as a stand-in wherever it is used.
 - **DECLARED**: supplied by the author in the sidecar, never inferred.
 - **UNOBSERVED**: the capture cannot see it. It is never zero and never absent. A
   summary over sessions where a quantity was unobserved has a smaller denominator, and
   the report states both counts.
 
-UNOBSERVED includes: tool-call arguments, repository state or version, provider cache
-behaviour, provider-added material, usage, cost, latency, the provider's render order,
-and the split of the system block into harness, project and user instructions. A
+UNOBSERVED includes: repository state or version, why the provider did or did not reuse
+a prefix, provider-added material, whether reasoning parts reach the provider, the
+provider's render order, sub-agent relations, and the split of the system block into
+harness, project and user instructions. (An earlier draft also listed tool-call
+arguments, provider usage, cost, latency and cache reads. The calibration run showed the
+arguments are in the record and the rest are in the harness's own database; see
+`specs/f1-calibration.md`.) A
 session with no tool definitions in any record has its tool-definition share recorded
 as UNOBSERVED, not as zero, because a harness that fails to expose tools and a harness
 that has none cannot be told apart.
 
 **A complete session** is one whose records, taken alone, are a whole observation: every
 record is valid and its integrity value recomputes; all records share one session
-identity; sequence numbers run 1..N, each once, across all request kinds (the adapter keeps
-one counter per session, so a repeated 1 means the harness restarted mid-session and a gap
-means a lost record); no lines were skipped; and at least one primary (`context`) request
+identity; every message has the shape the analysis understands; sequence numbers run 1..N, each
+once, across all request kinds (the adapter keeps one counter per session and persists it,
+so a harness restart does not reset it; a gap means a lost record, and if the adapter could
+not vouch for its ordering it writes a marker that makes the session incomplete); no lines
+were skipped; and at least one primary (`context`) request
 exists. A session that is not complete is excluded, its reason recorded, and never repaired.
 "Complete" means all expected observer records arrived. It does not mean the provider's
 final prompt was seen.
@@ -190,23 +198,23 @@ Rules:
 - **Before each session:** the author confirms the repository is on the allow-list,
   that no secrets are in the environment or working tree, and fills a **sidecar**
   with a closed vocabulary only: language family, size band, whether tests exist, task
-  type, whether project instructions are present, whether the author saw scope or
-  authority problems, and (at the end) an objective outcome such as tests passing, build
+  type, whether project instructions are present, whether other plugins that can change
+  the context were active, whether the author saw scope or authority problems, and (at the end) an objective outcome such as tests passing, build
   passing, change accepted, abandoned, or not applicable. The outcome is a fact about the
   work, not a measure of context quality. Free text is not accepted.
 - **After each session:** the raw spool is scanned. Two classes of hit are kept apart.
   A **credential** (an API-key-shaped string, a token, a private key block, a URL with
   embedded credentials, a named secret assigned a literal) excludes the session from
-  analysis and publication and is recorded in the exclusion ledger. An **identifier**
+  analysis and publication and is recorded in the exclusion record. An **identifier**
   (a path, an address, a hostname, an email) is expected in real work, is recorded as a
   count by class, and does not exclude the session, because the derivative has nowhere
   to carry it and the gate confirms that it does not. Literal sensitive terms the author
   lists locally (a repository name, a user name) are matched as well. Scan reports hold
   categories and counts, never the matched text.
 - The author may withdraw any session at any time, unread, with the reason
-  recorded as "author withdrawal". A withdrawn session stays in the ledger as a row.
-- **The corpus ledger** exists before the first session (see *Measurements*). Synthetic
-  and dry-run material is refused by the ecological ledger by rule.
+  recorded as "author withdrawal". A withdrawn session stays in the session index as a row.
+- **The session index** exists before the first session (see *Measurements*). Synthetic
+  and dry-run material is refused by the ecological session index by rule.
 
 ## Measurements
 
@@ -214,7 +222,9 @@ Per session, from the capture and the sidecar. Names follow the shared vocabular
 
 - session identity (local ordinal), repository class, task type, duration and
   request count, model identity, number of tools available;
-- rendered size per request (bytes; tokens as a labelled estimate), by category;
+- rendered size per request (bytes; tokens as two labelled estimates, bytes divided by four
+  and words times 1.3), by category, and, where the harness's usage record is joined,
+  provider-reported prompt tokens, output tokens, cache reads, cost and latency;
 - tool-definition share of the first request, and definition stability across
   requests;
 - system-block share, and its stability (the split by origin is unobserved);
@@ -222,21 +232,25 @@ Per session, from the capture and the sidecar. Names follow the shared vocabular
 - **carry-over** per request: bytes of parts re-sent unchanged from an earlier request in
   the session. Expected, not a finding on its own;
 - **redundant payload** per request: bytes of tool-output parts whose output body,
-  with the header removed, is byte-identical to one earlier in the same request; the
+  is byte-identical to one earlier in the same request and is at least 32 bytes; the
   second and later occurrences are counted. Whitespace-normalised identity is reported
   separately and never mixed in;
 - stable-prefix length per request under the assumed render order, and the category of
   the first divergence;
-- same-tool-and-title-different-bytes events (a proxy for freshness, see *Observability*);
+- same-call-different-bytes events (derived from observed arguments; a signal that an
+  older result survives beside a newer one, not that it is wrong);
 - compaction records, and **history rewrite** events (an earlier message part changed or
   disappeared between consecutive requests; appending is not a rewrite);
-- distance to the declared model window, where the capture yields it, else unobserved;
+- distance to the model window, three ways and never merged: provider-reported prompt
+  tokens, a bytes-based estimate and a word-based estimate, each over the model's input
+  limit if the harness records one, else its context limit; unobserved where the model has
+  no recorded limit;
 - the sidecar outcome.
 
 No embedding, no model and no similarity judge is used anywhere. Every measure is byte
 identity, exact identity after whitespace normalisation, or tool and source identity.
 
-**The ledger** has one row per session: ordinal, capture date (local only) and campaign
+**The session index** has one row per session: ordinal, capture date (local only) and campaign
 week, primary stratum and tags with their basis, repository class, reader identity,
 turn count, tools available, completeness and reasons, privacy state, sanitisation state,
 whether a derivative exists, shape cards derived, and a withdrawn or excluded flag with
@@ -260,7 +274,7 @@ cache behaviour, provider-added material, provider usage and cost, latency.
 ## Exclusions
 
 A session is excluded only for a reason on this closed list, recorded in the
-exclusion ledger, and never because its result looks unusual:
+exclusion record, and never because its result looks unusual:
 
 capture incomplete (with its attributed reason); credential hit in the raw scan;
 repository not on the allow-list; tool-testing session; author withdrawal; capture made
@@ -289,7 +303,7 @@ Stop at the first of:
 2. 30 usable sessions;
 3. ten calendar weeks from the first capture.
 
-A stratum is achievable if the author met natural work of that kind, which the ledger
+A stratum is achievable if the author met natural work of that kind, which the session index
 records. The corpus is never extended because its result is uninteresting. If it
 stops on time, it is published as it stands, with its coverage described.
 
@@ -326,7 +340,9 @@ stops on time, it is published as it stands, with its coverage described.
      Otherwise the pruning chapter becomes a conditional pass with the measured
      prevalence stated. (A long session is one meeting the S6 definition.)
    - **T3** prioritise externalise-and-recall if at least two sessions reach **60%** of the
-     declared window (estimated), or any compaction record occurs. The decisive value is
+     window, or any compaction record occurs. The primary basis is the provider-reported
+     prompt tokens when at least three sessions have them, otherwise the bytes-based
+     estimate; the word-based estimate is reported beside them and is not primary. The decisive value is
      the second-highest session, since two must reach the line. If neither, those chapters
      are framed as pressure-conditional.
    - **T4** run the paid cache probe only if the median stable-prefix fraction is at least
@@ -337,7 +353,8 @@ stops on time, it is published as it stands, with its coverage described.
    from the threshold, the number of sessions used and unobserved, and the effect on the
    status of leaving out each session in turn. A value within a quarter of its threshold
    (relative) is labelled **borderline**, meaning worth review: 9.8% against 10% is a near
-   miss, not an absence. `NOT_EVALUABLE` means fewer than three sessions could be used, and
+   miss, not an absence. For T3 the record states the basis it rests on, shows the other bases
+   beside it, and is labelled borderline if any basis sits near the line, naming which one. `NOT_EVALUABLE` means fewer than three sessions could be used, and
    is not the same as not triggered. Reaching a trigger means "test this next"; missing it
    means "do not spend the effort yet". It never means the mechanism helps or does not
    matter. The measurement code is versioned before capture and is not tuned to cross a
@@ -398,3 +415,20 @@ visible:
 - A long session is defined as one meeting S6. Fewer than three usable sessions makes a
   trigger not evaluable.
 - Growth shape is undefined below four requests.
+
+Changes made after the calibration run (`specs/f1-calibration.md`), still before any data:
+
+- The message shape, call identity, model-limit read and the token estimate were corrected from
+  what the real harness produced. Strata S2, S3, S4 and S8 are derived from observed call
+  arguments, no longer proxies.
+- Provider usage, cost, latency and cache reads are joined from the harness's own record and are
+  JOINED, not unobserved. T3 prefers the provider-reported prompt tokens.
+- Window pressure is reported three ways and never merged; the input limit is used when there is
+  one.
+- Redundant payload has a 32-byte floor. Carry-over is matched part for part against the previous
+  request, so a repeated read is new material rather than carry-over.
+- Reasoning is its own category.
+- The adapter's sequence counter is persisted. A session with an ordering-failure marker or a
+  message in an unrecognised shape is incomplete.
+- The sidecar records whether other context-modifying plugins were active.
+- The session index is the name for what earlier drafts called the ledger.

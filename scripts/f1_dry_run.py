@@ -12,8 +12,8 @@ Two runs, both deterministic:
 2. **Measurement dry run.** A synthetic session whose quantities were worked out by hand is
    analysed, and each reported quantity is reconciled against the worked-out value.
 
-Exit status is non-zero on any failure. The ledger used is a throwaway dry-run ledger in a
-temporary directory; the ecological ledger is never opened.
+Exit status is non-zero on any failure. The session index used is a throwaway dry-run
+index in a temporary directory; the ecological session index is never opened.
 """
 
 from __future__ import annotations
@@ -25,8 +25,13 @@ from pathlib import Path
 
 from project_context.corpus.f1_analysis import analyse_session, dumps, reconcile
 from project_context.corpus.f1_pipeline import derivative_bytes, process_session
-from project_context.corpus.ledger import DRY_RUN, ECOLOGICAL, Ledger, LedgerError
 from project_context.corpus.privacy import gate, scan_raw
+from project_context.corpus.session_index import (
+    DRY_RUN,
+    ECOLOGICAL,
+    SessionIndex,
+    SessionIndexError,
+)
 from project_context.corpus.synthetic import (
     GROWTH_EXPECTED,
     PLANTED,
@@ -48,7 +53,7 @@ def fragments() -> list[str]:
 
 def privacy_dry_run(work: Path) -> list[tuple[str, bool, str]]:
     checks: list[tuple[str, bool, str]] = []
-    ledger = Ledger.create(work / "dry-run-ledger.json", DRY_RUN, "dry-run-campaign")
+    index = SessionIndex.create(work / "dry-run-index.json", DRY_RUN, "dry-run-campaign")
     records = privacy_session()
 
     scan = scan_raw(records, SENSITIVE)
@@ -71,7 +76,7 @@ def privacy_dry_run(work: Path) -> list[tuple[str, bool, str]]:
         records,
         session_key="dry-run-ses-7f3a91",
         sidecar=SIDECAR,
-        ledger=ledger,
+        session_index=index,
         sensitive_terms=SENSITIVE,
     )
     checks.append(
@@ -86,7 +91,7 @@ def privacy_dry_run(work: Path) -> list[tuple[str, bool, str]]:
         records,
         session_key="dry-run-ses-forced",
         sidecar=SIDECAR,
-        ledger=ledger,
+        session_index=index,
         sensitive_terms=SENSITIVE,
         force_derivative=True,
     )
@@ -114,7 +119,7 @@ def privacy_dry_run(work: Path) -> list[tuple[str, bool, str]]:
     blind = privacy_session(with_blind_spot_only=True)
     blind_scan = scan_raw(blind)
     blind_out = process_session(
-        blind, session_key="dry-run-ses-blind", sidecar=SIDECAR, ledger=ledger
+        blind, session_key="dry-run-ses-blind", sidecar=SIDECAR, session_index=index
     )
     blind_blob = derivative_bytes(blind_out).decode("ascii")
     checks.append(
@@ -136,25 +141,25 @@ def privacy_dry_run(work: Path) -> list[tuple[str, bool, str]]:
             "planted path placed in a field",
         )
     )
-    public = json.dumps(ledger.public_projection())
+    public = json.dumps(index.public_projection())
     private = ("dry-run-ses", "2030-01-01", "session_key", "captured_at", "link")
     checks.append(
         (
-            "public ledger projection carries no identity, time or digest",
+            "public session-index projection carries no identity, time or digest",
             not any(p in public for p in private),
-            f"{len(ledger.entries)} dry-run rows",
+            f"{len(index.entries)} dry-run rows",
         )
     )
     try:
-        Ledger.load(work / "dry-run-ledger.json", ECOLOGICAL)
+        SessionIndex.load(work / "dry-run-index.json", ECOLOGICAL)
         refused = False
-    except LedgerError:
+    except SessionIndexError:
         refused = True
     checks.append(
         (
-            "the dry-run ledger cannot be opened as the ecological corpus",
+            "the dry-run session index cannot be opened as the ecological corpus",
             refused,
-            "kind mismatch refused; the ecological ledger was not opened",
+            "kind mismatch refused; the ecological session index was not opened",
         )
     )
     return checks
@@ -175,7 +180,7 @@ def measurement_dry_run() -> list[tuple[str, bool, str]]:
     got = [r["identities_with_differing_bytes"] for r in req]
     checks.append(
         (
-            "same tool and title, different bytes (proxy)",
+            "same call (tool and arguments), different bytes",
             got == GROWTH_EXPECTED["identities_with_differing_bytes"],
             f"{got}",
         )

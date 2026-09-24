@@ -1,17 +1,17 @@
-"""The F1 corpus ledger: one row per session, written when the session ends.
+"""The F1 session index: one row per session, written when the session ends.
 
 It exists before the first session so that inclusion is decided by rules, never by how a
-session turned out. The ledger has two faces:
+session turned out. The index has two faces:
 
-* the **local ledger** (git-ignored) holds everything, including the private index that
+* the **local index** (git-ignored) holds everything, including the private index that
   links a raw capture to its derivative by digest;
 * the **public projection** holds ordinals, coarse structure and states only: no session
   identity, no timestamps, no digests.
 
-Three kinds of ledger exist and cannot be mixed. An ``ecological`` ledger accepts only
-genuine sessions. A ``dry_run`` ledger accepts only synthetic ones, and a ``calibration``
-ledger only the deliberate tool-testing session used to check the instrument. Neither can be
-loaded as the corpus, and the ecological ledger refuses both. A pipeline test or a calibration
+Three kinds of index exist and cannot be mixed. An ``ecological`` index accepts only
+genuine sessions. A ``dry_run`` index accepts only synthetic ones, and a ``calibration``
+index only the deliberate tool-testing session used to check the instrument. Neither can be
+loaded as the corpus, and the ecological index refuses both. A pipeline test or a calibration
 session therefore cannot enter the ecological corpus by accident.
 """
 
@@ -25,7 +25,9 @@ from typing import Any
 
 from project_context.corpus.strata import STRATA, UNCLASSIFIED
 
-LEDGER_SCHEMA = "project_context.f1_ledger.v1"
+# Persisted schema identifier. The string is frozen: index files already
+# written name it, so only the constant name follows the rename.
+SESSION_INDEX_SCHEMA = "project_context.f1_ledger.v1"
 ECOLOGICAL = "ecological"
 DRY_RUN = "dry_run"
 CALIBRATION = "calibration"
@@ -59,6 +61,7 @@ SIDECAR_KEYS = {
     "project_instructions": (True, False),
     "scope_crossover": (True, False),
     "authority_conflict": (True, False),
+    "other_context_plugins": (True, False),
 }
 
 # From the preregistration. A session is excluded only for one of these.
@@ -84,7 +87,7 @@ STOP_MAX_PRIMARY_SAME = 6
 STOP_MAX_WEEKS = 10
 
 
-class LedgerError(ValueError):
+class SessionIndexError(ValueError):
     pass
 
 
@@ -123,6 +126,7 @@ class Entry:
     sanitisation_state: str
     derivative_present: bool
     shape_cards: list[str]
+    other_context_plugins: bool | None = None  # declared: other plugins that can change context
     withdrawn: bool = False
     excluded: bool = False
     exclusion_reason: str | None = None
@@ -152,6 +156,7 @@ PUBLIC_FIELDS = (
     "withdrawn",
     "excluded",
     "exclusion_reason",
+    "other_context_plugins",
 )
 
 
@@ -168,10 +173,10 @@ def is_synthetic(session_key: str, evidence_class: str) -> bool:
     return session_class(session_key, evidence_class) != ECOLOGICAL
 
 
-class Ledger:
+class SessionIndex:
     def __init__(self, path: Path, kind: str, campaign_id: str, created_at: str):
         if kind not in (ECOLOGICAL, DRY_RUN, CALIBRATION):
-            raise LedgerError(f"unknown ledger kind {kind!r}")
+            raise SessionIndexError(f"unknown session-index kind {kind!r}")
         self.path, self.kind, self.campaign_id, self.created_at = (
             path,
             kind,
@@ -182,28 +187,30 @@ class Ledger:
 
     # -- persistence
     @classmethod
-    def create(cls, path: Path, kind: str, campaign_id: str, now: str | None = None) -> Ledger:
+    def create(
+        cls, path: Path, kind: str, campaign_id: str, now: str | None = None
+    ) -> SessionIndex:
         if path.exists():
-            raise LedgerError(f"{path.name} already exists; a ledger is created once")
-        ledger = cls(path, kind, campaign_id, now or datetime.now(timezone.utc).isoformat())
-        ledger.save()
-        return ledger
+            raise SessionIndexError(f"{path.name} already exists; an index is created once")
+        index = cls(path, kind, campaign_id, now or datetime.now(timezone.utc).isoformat())
+        index.save()
+        return index
 
     @classmethod
-    def load(cls, path: Path, expected_kind: str) -> Ledger:
+    def load(cls, path: Path, expected_kind: str) -> SessionIndex:
         data = json.loads(path.read_text(encoding="utf-8"))
-        if data.get("schema") != LEDGER_SCHEMA:
-            raise LedgerError("not an F1 ledger")
+        if data.get("schema") != SESSION_INDEX_SCHEMA:
+            raise SessionIndexError("not an F1 session index")
         if data["kind"] != expected_kind:
-            raise LedgerError(f"ledger is {data['kind']!r}, expected {expected_kind!r}")
-        ledger = cls(path, data["kind"], data["campaign_id"], data["created_at"])
-        ledger.entries = [Entry(**row) for row in data["entries"]]
-        return ledger
+            raise SessionIndexError(f"index is {data['kind']!r}, expected {expected_kind!r}")
+        index = cls(path, data["kind"], data["campaign_id"], data["created_at"])
+        index.entries = [Entry(**row) for row in data["entries"]]
+        return index
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         body = {
-            "schema": LEDGER_SCHEMA,
+            "schema": SESSION_INDEX_SCHEMA,
             "kind": self.kind,
             "campaign_id": self.campaign_id,
             "created_at": self.created_at,
@@ -215,19 +222,21 @@ class Ledger:
     def add(self, entry: Entry) -> Entry:
         klass = session_class(entry.session_key, entry.evidence_class)
         if self.kind == ECOLOGICAL and klass != ECOLOGICAL:
-            raise LedgerError(
-                "synthetic, dry-run or calibration material is refused by the ecological ledger"
+            raise SessionIndexError(
+                "synthetic, dry-run or calibration material is refused by the ecological index"
             )
         if self.kind == DRY_RUN and klass != "synthetic":
-            raise LedgerError("only synthetic material may enter a dry-run ledger")
+            raise SessionIndexError("only synthetic material may enter a dry-run index")
         if self.kind == CALIBRATION and klass != CALIBRATION:
-            raise LedgerError("only calibration sessions may enter a calibration ledger")
+            raise SessionIndexError("only calibration sessions may enter a calibration index")
         if any(e.session_key == entry.session_key for e in self.entries):
-            raise LedgerError("session already in the ledger")
-        if entry.exclusion_reason is not None and entry.exclusion_reason not in EXCLUSION_REASONS:
-            raise LedgerError(f"exclusion reason {entry.exclusion_reason!r} is not on the list")
+            raise SessionIndexError("session already in the index")
+        if entry.exclusion_reason is not None and entry.exclusion_reason not in (EXCLUSION_REASONS):
+            raise SessionIndexError(
+                f"exclusion reason {entry.exclusion_reason!r} is not on the list"
+            )
         if entry.primary_stratum not in (*STRATA, UNCLASSIFIED):
-            raise LedgerError("unknown stratum")
+            raise SessionIndexError("unknown stratum")
         entry.ordinal = len(self.entries) + 1
         self.entries.append(entry)
         self.save()
@@ -244,7 +253,7 @@ class Ledger:
 
     def exclude(self, ordinal: int, reason: str) -> None:
         if reason not in EXCLUSION_REASONS:
-            raise LedgerError(f"exclusion reason {reason!r} is not on the list")
+            raise SessionIndexError(f"exclusion reason {reason!r} is not on the list")
         entry = self._get(ordinal)
         entry.excluded, entry.exclusion_reason = True, reason
         self.save()
@@ -257,7 +266,7 @@ class Ledger:
         return len([e for e in self.entries if e.evidence_class == ECOLOGICAL])
 
     def stopping_status(self, weeks_elapsed: float) -> dict[str, Any]:
-        """Evaluate the preregistered stopping rule. Reads the ledger; changes nothing."""
+        """Evaluate the preregistered stopping rule. Reads the index; changes nothing."""
         usable = self.usable()
         primary: dict[str, int] = {}
         anywhere: dict[str, int] = {}
@@ -291,14 +300,14 @@ class Ledger:
         }
 
     def public_projection(self) -> dict[str, Any]:
-        """What may be published about the ledger, before any approval step.
+        """What may be published about the index, before any approval step.
 
         Ordinals and coarse structure only. Session identity, capture time and every digest
         stay local.
         """
         rows = [{k: getattr(e, k) for k in PUBLIC_FIELDS} for e in self.entries]
         return {
-            "schema": LEDGER_SCHEMA + ".public",
+            "schema": SESSION_INDEX_SCHEMA + ".public",
             "kind": self.kind,
             "sessions_recorded": len(rows),
             "entries": rows,

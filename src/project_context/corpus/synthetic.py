@@ -1,7 +1,7 @@
 """Synthetic capture builders for the F1 dry runs. Nothing here is ecological evidence.
 
 Every session built here carries the reserved identifier prefix ``synthetic-`` or
-``dry-run-``, which the ecological ledger refuses. The sessions come in two kinds:
+``dry-run-``, which the ecological session index refuses. The sessions come in two kinds:
 
 * **measurement sessions**, whose composition is chosen so that every quantity F1 reports
   has a value that can be worked out by hand and written into a test;

@@ -168,11 +168,11 @@ analysis reads files. A source scan test pins this invariant.
     exploratory work, which stays local.
 
 41. **The F1 ecological corpus starts only after review.** The capture
-    pipeline, the ledger (`scripts/f1_session.py`) and the dry runs
+    pipeline, the session index (`scripts/f1_session.py`) and the dry runs
     (`scripts/f1_dry_run.py`) exist, but no genuine session is captured
     until the F1 preregistration has been reviewed and frozen. Synthetic
-    and dry-run material never enters the ecological ledger; the ledger
-    refuses it by rule, and a dry-run ledger cannot be opened as the
+    and dry-run material never enters the ecological session index; the index
+    refuses it by rule, and a dry-run session index cannot be opened as the
     corpus. Unobserved is not zero: a quantity the capture cannot see is
     recorded as `UNOBSERVED` and reaches every aggregate as a smaller
     denominator, never as a zero. Routing triggers decide what is built

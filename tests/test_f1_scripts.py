@@ -1,4 +1,4 @@
-"""The F1 command-line tools: the dry-run script and the ledger manager."""
+"""The F1 command-line tools: the dry-run script and the session-index manager."""
 
 import importlib.util
 import json
@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from project_context.corpus.ledger import ECOLOGICAL, Ledger
+from project_context.corpus.session_index import ECOLOGICAL, SessionIndex
 
 
 def load(name):
@@ -27,48 +27,92 @@ def test_the_dry_run_script_passes_and_says_it_is_synthetic(capsys):
 @pytest.fixture
 def session_tool(tmp_path, monkeypatch):
     tool = load("f1_session")
-    monkeypatch.setattr(tool, "LEDGER", tmp_path / "ledger.json")
+    monkeypatch.setattr(tool, "SESSION_INDEX", tmp_path / "session-index.json")
     monkeypatch.setattr(tool, "PUBLIC", tmp_path / "public.json")
     monkeypatch.setattr(tool, "DERIVATIVES", tmp_path / "derivatives")
     return tool, tmp_path
 
 
-def test_init_creates_an_empty_ecological_ledger_once(session_tool, capsys):
+def test_init_creates_an_empty_session_index_once(session_tool, capsys):
     tool, tmp = session_tool
     assert tool.cmd_init(None) == 0
-    ledger = Ledger.load(tmp / "ledger.json", ECOLOGICAL)
-    assert ledger.entries == [] and ledger.genuine_count() == 0
+    index = SessionIndex.load(tmp / "session-index.json", ECOLOGICAL)
+    assert index.entries == [] and index.genuine_count() == 0
     public = json.loads((tmp / "public.json").read_text(encoding="utf-8"))
     assert public["sessions_recorded"] == 0 and public["entries"] == []
     with pytest.raises(Exception):
         tool.cmd_init(None)
 
 
-def test_process_refuses_synthetic_material(session_tool, tmp_path):
-    tool, tmp = session_tool
-    tool.cmd_init(None)
-    from project_context.corpus.synthetic import growth_session
+class Args:
+    def __init__(self, spool, sidecar, session_id, key="ses-real-key"):
+        self.spool, self.sidecar, self.session_id = str(spool), str(sidecar), session_id
+        self.session_key, self.sensitive_terms, self.opencode_db = key, "", None
 
+
+def write_spool(tmp, records):
     spool = tmp / "spool.jsonl"
-    spool.write_text("\n".join(json.dumps(r) for r in growth_session()[0]), encoding="utf-8")
+    spool.write_text("\n".join(json.dumps(r) for r in records), encoding="utf-8")
     sidecar = tmp / "sidecar.json"
     sidecar.write_text(json.dumps({"language_family": "python"}), encoding="utf-8")
-
-    class Args:
-        pass
-
-    args = Args()
-    args.spool, args.sidecar = str(spool), str(sidecar)
-    args.session_key, args.sensitive_terms = "synthetic-growth", ""
-    from project_context.corpus.ledger import LedgerError
-
-    with pytest.raises(LedgerError):
-        tool.cmd_process(args)
-    assert Ledger.load(tmp / "ledger.json", ECOLOGICAL).entries == []
+    return spool, sidecar
 
 
-def test_the_committed_public_ledger_is_the_ecological_one():
-    public = Path("experiments/f1/ledger.public.json")
+def test_process_refuses_synthetic_material(session_tool):
+    tool, tmp = session_tool
+    tool.cmd_init(None)
+    from project_context.corpus.session_index import SessionIndexError
+    from project_context.corpus.synthetic import growth_session
+
+    spool, sidecar = write_spool(tmp, growth_session()[0])
+    with pytest.raises(SessionIndexError):
+        tool.cmd_process(Args(spool, sidecar, "synthetic-growth", key="synthetic-growth"))
+    assert SessionIndex.load(tmp / "session-index.json", ECOLOGICAL).entries == []
+
+
+def test_process_selects_one_session_and_refuses_an_unknown_one(session_tool):
+    tool, tmp = session_tool
+    tool.cmd_init(None)
+    from project_context.corpus.session_index import SessionIndexError
+    from project_context.corpus.synthetic import growth_session, long_session
+
+    spool, sidecar = write_spool(tmp, growth_session()[0] + long_session(4))
+    with pytest.raises(SessionIndexError):
+        tool.cmd_process(Args(spool, sidecar, "ses-that-is-not-there"))
+
+
+def test_a_registered_calibration_session_cannot_enter_under_any_key(session_tool, monkeypatch):
+    tool, tmp = session_tool
+    tool.cmd_init(None)
+    from project_context.corpus.session_index import SessionIndexError
+    from project_context.corpus.synthetic import growth_session
+
+    records = growth_session()[0]
+    registry = tmp / "sessions.json"
+    registry.write_text(json.dumps([records[0]["session_id"]]), encoding="utf-8")
+    monkeypatch.setattr(tool, "CALIBRATION_REGISTRY", registry)
+    spool, sidecar = write_spool(tmp, records)
+    with pytest.raises(SessionIndexError):
+        # a key that looks perfectly genuine: the registry, not the key, decides
+        tool.cmd_process(Args(spool, sidecar, records[0]["session_id"], key="ses-genuine-looking"))
+    assert SessionIndex.load(tmp / "session-index.json", ECOLOGICAL).entries == []
+
+
+def test_the_calibration_spool_is_not_a_source_for_the_corpus(session_tool, monkeypatch):
+    tool, tmp = session_tool
+    tool.cmd_init(None)
+    from project_context.corpus.session_index import SessionIndexError
+
+    fake = tmp / "calibration"
+    (fake / "spool").mkdir(parents=True)
+    monkeypatch.setattr(tool, "CALIBRATION_DIR", fake)
+    _, sidecar = write_spool(tmp, [])
+    with pytest.raises(SessionIndexError):
+        tool.cmd_process(Args(fake / "spool", sidecar, "anything"))
+
+
+def test_the_committed_public_projection_is_the_ecological_one():
+    public = Path("experiments/f1/session-index.public.json")
     assert public.exists()
     body = json.loads(public.read_text(encoding="utf-8"))
     assert body["kind"] == ECOLOGICAL

@@ -26,8 +26,8 @@ from typing import Any
 
 from project_context.corpus.completeness import UNOBSERVED
 from project_context.corpus.f1_analysis import ANALYSIS_VERSION, CATEGORIES, L1_SCHEMA
-from project_context.corpus.ledger import SIDECAR_KEYS
 from project_context.corpus.manifest import SECRET_PATTERNS
+from project_context.corpus.session_index import SIDECAR_KEYS
 from project_context.corpus.shapecards import SHAPES
 from project_context.corpus.strata import STRATA, UNCLASSIFIED
 from project_context.opencode.prevalence import assert_exportable

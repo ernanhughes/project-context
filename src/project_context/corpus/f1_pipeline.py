@@ -6,7 +6,7 @@
 
 Stages one and two happen in the harness adapter and land in a local, git-ignored spool.
 Everything from local validation onwards is `process_session`. It never writes raw text
-anywhere; it returns numbers, states and cards, and records the outcome in the ledger.
+anywhere; it returns numbers, states and cards, and records the outcome in the session index.
 
 A session that fails a stage is excluded with a reason from the closed list and is not
 repaired. A derivative that fails the gate is blocked, not edited.
@@ -19,7 +19,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from project_context.corpus import ledger as ledger_mod
+from project_context.corpus import session_index as session_index_mod
 from project_context.corpus.completeness import (
     UNOBSERVED,
     Completeness,
@@ -27,8 +27,13 @@ from project_context.corpus.completeness import (
     split_control,
 )
 from project_context.corpus.f1_analysis import analyse_session, dumps, reconcile
-from project_context.corpus.ledger import Entry, Ledger, campaign_week, validate_sidecar
 from project_context.corpus.privacy import GateResult, ScanReport, gate, scan_raw
+from project_context.corpus.session_index import (
+    Entry,
+    SessionIndex,
+    campaign_week,
+    validate_sidecar,
+)
 from project_context.corpus.shapecards import Card, derive_cards, validate_card
 from project_context.corpus.strata import Assignment, assign
 
@@ -39,7 +44,7 @@ STAGES = (
     "reconciliation",
     "publication_gate",
     "shape_cards",
-    "ledger",
+    "session_index",
 )
 
 
@@ -56,7 +61,7 @@ class Outcome:
     cards: list[Card] = field(default_factory=list)
     assignment: Assignment | None = None
     gate: GateResult | None = None
-    ledger_ordinal: int | None = None
+    session_ordinal: int | None = None
 
 
 def _digest(value: Any) -> str:
@@ -77,11 +82,12 @@ def process_session(
     *,
     session_key: str,
     sidecar: dict[str, Any],
-    ledger: Ledger,
+    session_index: SessionIndex,
     first_capture_at: str | None = None,
     skipped_lines: int = 0,
     sensitive_terms: tuple[str, ...] = (),
     force_derivative: bool = False,
+    usage: list[dict[str, Any]] | None = None,
     refuse_session_ids: frozenset[str] = frozenset(),
 ) -> Outcome:
     """Run one captured session through every stage and record it.
@@ -91,16 +97,16 @@ def process_session(
 
     `force_derivative` builds and gates the derivative even for a session the scan excluded.
     It exists for the privacy dry run, which must show that the derivative is clean whether or
-    not the scanner noticed anything. It never changes what the ledger records.
+    not the scanner noticed anything. It never changes what the session index records.
     """
     listed = {r.get("session_id") for r in records} & set(refuse_session_ids)
     if listed:
-        raise ledger_mod.LedgerError(
-            "session is on the calibration registry and cannot enter this ledger"
+        raise session_index_mod.SessionIndexError(
+            "session is on the calibration registry and cannot enter this index"
         )
     problems = validate_sidecar(sidecar)
     if problems:
-        raise ledger_mod.LedgerError(f"sidecar rejected: {problems}")
+        raise session_index_mod.SessionIndexError(f"sidecar rejected: {problems}")
 
     completeness = assess_session(records, skipped_lines)
     records, _control = split_control(records)  # control records mark ordering, never analysed
@@ -121,12 +127,13 @@ def process_session(
             session_key=session_key,
             captured_at=captured,
             campaign_week=campaign_week(first_capture_at or captured, captured) if captured else 1,
-            primary_stratum=assignment.primary if assignment else ledger_mod.UNCLASSIFIED,
+            primary_stratum=assignment.primary if assignment else session_index_mod.UNCLASSIFIED,
             tags=list(assignment.tags) if assignment else [],
             satisfied_basis=dict(assignment.basis) if assignment else {},
             language_family=sidecar.get("language_family"),
             size_band=sidecar.get("size_band"),
             has_tests=sidecar.get("has_tests"),
+            other_context_plugins=sidecar.get("other_context_plugins"),
             task_type=sidecar.get("task_type"),
             outcome=sidecar.get("outcome"),
             readers=_readers(records),
@@ -140,11 +147,13 @@ def process_session(
             shape_cards=sorted({c.shape for c in outcome.cards}),
             excluded=outcome.excluded,
             exclusion_reason=outcome.exclusion_reason,
-            evidence_class=ledger_mod.session_class(session_key, ledger_mod.ECOLOGICAL),
+            evidence_class=session_index_mod.session_class(
+                session_key, session_index_mod.ECOLOGICAL
+            ),
             link={"raw": _digest(records), "derivative": _digest(l1)} if outcome.l1 else {},
         )
-        outcome.ledger_ordinal = ledger.add(entry).ordinal
-        outcome.stage_reached = "ledger"
+        outcome.session_ordinal = session_index.add(entry).ordinal
+        outcome.stage_reached = "session_index"
         return outcome
 
     # 1. local validation
@@ -167,7 +176,7 @@ def process_session(
             return record(out, privacy=privacy, sanitisation="none", derivative=False)
 
     # 3. structural extraction
-    l1 = analyse_session(records, declared=sidecar)
+    l1 = analyse_session(records, declared=sidecar, usage=usage)
     out.l1, out.stage_reached = l1, "structural_extraction"
 
     # 4. reconciliation (instrument control)
