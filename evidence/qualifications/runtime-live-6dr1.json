@@ -1,0 +1,103 @@
+{
+  "qualification_id": "runtime-live-6dr1",
+  "purpose": "live integration qualification",
+  "synthetic": true,
+  "verdict": "PASS",
+  "attempt": 1,
+  "runtime_implementation": {
+    "git_revision": "968a91b57abd697ab47ca50b7f789f31f8e0827d",
+    "git_status_runtime": "",
+    "deployed_hashes": {
+      "observer/index.ts": "2B4B9AE7EB4B897434E48F75A77F8E3FDC4E44BB85989B4593257654716A0563",
+      "observer/capture.ts": "B46A905DF96B4044A945487D7F2EFB231CC13F2012067012D9DF5AFCF5EE6EE5",
+      "observer/schema.ts": "B231AB3B2169E8895DE40AFDF45F3C476D76C778C57081294443D5C8EABA4730",
+      "observer/sequence.ts": "71DB7E396B39FE0F424EC087F4FB89A58994A537110D2D4CCB43BEBE8A3F2341",
+      "runtime/index.ts": "DF822E0C4A9BB54055A300B9627979C86E7F9116624EE8E9C561F8BD5E5359F5",
+      "runtime/runtime.ts": "D8F2647834789E18F68ACF85FC31CBD70AF41821A9DD8E3940D866ECE4C7C60",
+      "runtime/blocks.ts": "B60C81B204C12F1925D0D4E8C7BC746D859C9D3AAE63DA9BF85D0AADF1D96348",
+      "runtime/trace.ts": "3C100197C80C341EE6C0D205CD10745503CEFBC885E1D0E5FB71639D568EFD60"
+    }
+  },
+  "opencode_environment": {
+    "opencode_version": "2.0.16",
+    "observer_plugin_version": "0.3.0",
+    "runtime_plugin_version": "0.1.0"
+  },
+  "selected_bundle": {
+    "bundle_id": "rt-live-probe-6dr1",
+    "bundle_digest": "aaf9b1b96fc24ffb8f5497b06a8b1da3019dd4a8bdc57801e9fdd4215c3cb5f8"
+  },
+  "rendered_block": {
+    "policy_id": "runtime-render-v1",
+    "digest": "24de5edcf212358375d0e9e8b8f71d5fafaec4e51a0e7e0d69003401a25a23bd",
+    "text": "[CONTEXT RUNTIME]\n[TEST CONSTRAINT]\nRUNTIME-LIVE-PROBE-6D-R1\nFor this synthetic qualification request only,\nthe marker value is ORANGE-QUARTZ-731.\n[/CONTEXT RUNTIME]"
+  },
+  "expected_marker": "ORANGE-QUARTZ-731",
+  "injection_location": "system-append",
+  "run": {
+    "exit_code": 0,
+    "hook_error": false,
+    "model_response_digest": "5f14c516e0c7a2be0aa613a98a475138fe4e5824bd7715e51ae46652059c709b",
+    "run_log_digest": "5f14c516e0c7a2be0aa613a98a475138fe4e5824bd7715e51ae46652059c709b"
+  },
+  "observed": {
+    "new_records_total": 1,
+    "new_context_records": 1,
+    "records": [
+      {
+        "capture_id": "33fd7ed3-91fe-4bef-b1be-8cccb0368c2a",
+        "request_kind": "context",
+        "session_id": "ses_f2b8041f8ffevK8RnWSPZMnjBp",
+        "record_valid": true,
+        "system_blocks": 5,
+        "marker_occurrences": 1,
+        "unexpected_runtime_blocks": 0,
+        "checks": {
+          "record_valid": true,
+          "markers_present": true,
+          "block_exact": true,
+          "block_once": true,
+          "order_preserved": true,
+          "no_unexpected_runtime_content": true,
+          "integrity_match": true
+        },
+        "passed": true
+      }
+    ]
+  },
+  "required": {
+    "runtime_opted_in_explicitly": true,
+    "run_clean": true,
+    "observer_captured": true,
+    "all_context_records_pass": true,
+    "no_marker_outside_context_records": true
+  },
+  "limitations": [
+    "TypeScript runtime emits no machine injection receipt; acceptance is evidenced by a clean run plus the independent capture.",
+    "Observation is at the OpenCode V2 model-context hook, not the provider wire request.",
+    "Model response is diagnostic only, never the criterion.",
+    "Loader and execution gates rest on the server log and the opt-in runtime trace, both local-only and digest-recorded.",
+    "Mutation-before-observer is inferred from trace plus capture, not from registration order."
+  ],
+  "mode": "6dr1",
+  "prev_qualification": "runtime-live-6dl",
+  "gates": {
+    "loader": true,
+    "execution": true,
+    "mutation": true,
+    "observation": true,
+    "reconciliation": true
+  },
+  "gate_detail": {
+    "server_log_digest": "d8905c5ea0bf4750361c21bb207facb61befb294664e23e3b9c32dc108f00882",
+    "entrypoint_found": true,
+    "setup_record_found": true,
+    "trace_digest": "0f71b7a8e8cff3ca704ed0c0291d5b721d8fada300487fb1f4ac6671b4d9a63d",
+    "hook_records": 1,
+    "hook_outcomes": [
+      "injected"
+    ],
+    "injected_with_single_block_growth": true
+  },
+  "ordering": "runtime-before-observer"
+}
