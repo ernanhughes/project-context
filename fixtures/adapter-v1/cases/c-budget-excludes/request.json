@@ -1,0 +1,1 @@
+{"branch": null, "components": ["compat"], "created_at": "2026-09-24T11:00:00Z", "evidence_refs": [], "operation": "modify", "paths": ["src/project_context/compat/adapter/legacy.py"], "repo": "project-context", "request_id": "req-adapter-task", "schema_version": "project_context.activation_request.v1", "task": null, "task_id": "task-adapter", "workspace": null}

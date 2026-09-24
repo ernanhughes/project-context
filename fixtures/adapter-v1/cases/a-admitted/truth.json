@@ -1,0 +1,1 @@
+{"ledger": {"obligation-002": {"admitted": true, "trace_reason": "admitted"}, "verification-004": {"admitted": true, "trace_reason": "admitted"}}, "ordinary": {"ord-distract": {"admitted": false, "trace_reason": "no-earn"}, "ord-mand": {"admitted": true, "trace_reason": "admitted"}}, "success": true}

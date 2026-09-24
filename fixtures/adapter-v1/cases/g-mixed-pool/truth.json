@@ -1,0 +1,1 @@
+{"ledger": {"failure-001": {"admitted": true, "trace_reason": "admitted"}}, "ordinary": {"ord-mand": {"admitted": true, "trace_reason": "admitted"}, "ord-pref": {"admitted": true, "trace_reason": "admitted"}}, "success": true}

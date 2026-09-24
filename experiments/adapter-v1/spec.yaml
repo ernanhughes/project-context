@@ -1,0 +1,46 @@
+# Frozen experiment contract: adapter-v1. See specs/experiment-contract.md.
+question: >-
+  Can ACTIVE ledger state be translated into ordinary compiler
+  candidates while retaining authority, scope, provenance and epistemic
+  meaning, without gaining admission privilege from ledger origin?
+hypotheses: [H1-faithful-conversion, H2-normal-competition, H3-authority-not-source]
+population: fixtures/adapter-v1 manifest v1 (7 synthetic compatibility
+  cases reusing activation-v1 streams)
+independent_variable: candidate pool composition (adapted ledger plus
+  ordinary candidates per case)
+controlled_variables:
+  - ledger state per case (frozen events.jsonl, projected deterministically)
+  - activation per case (frozen request JSON, typed policy)
+  - ordinary pool per case (frozen candidates JSON)
+  - compiler request per case (frozen compile JSON, required_ids empty)
+  - policy: compiler-policy-v1 (unchanged)
+  - token counting: fixture-declared counts for ordinary candidates,
+    word-approximation for adapted candidates (labelled)
+  - no models, no network, no retrieval, no injection
+conditions: [adapted-plus-ordinary compiled under the existing staged engine]
+measurements:
+  - candidate conversion success (ACTIVE to exactly one candidate)
+  - metadata preservation (authority band, scope, epistemic tag,
+    provenance, identity determinism)
+  - lineage preservation (adapter receipts per decision)
+  - ordinary-compiler compatibility (admit / lose / omit per oracle)
+  - ledger privilege violations (mandatory bands, per-item relevance,
+    source branches in compiler, budget overruns)
+  - legacy compiler compatibility (existing fixtures byte-identical)
+success_criteria:
+  - every case compiles per its oracle with no privilege violation
+  - no adapted candidate MANDATORY/REQUIRED or distinctly relevant
+  - compiler sources contain no ledger/activation branch
+failure_criteria:
+  - any oracle mismatch on the seven cases
+  - any privilege violation
+  - any legacy fixture output change
+  - nondeterministic rerun output
+  - any oracle truth token in runtime sources or fixture runtime files
+falsification:
+  - an adapted candidate that cannot lose (always admitted regardless
+    of pool and budget)
+  - standing that follows source_kind rather than authority metadata
+seed_strategy: none required (no randomness anywhere in the pipeline)
+provider_model: synthetic, no model calls
+cost_ceiling: zero spend (offline suite)

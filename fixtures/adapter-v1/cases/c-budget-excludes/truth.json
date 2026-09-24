@@ -1,0 +1,1 @@
+{"ledger": {"obligation-002": {"admitted": false, "trace_reason": "budget"}, "verification-004": {"admitted": false, "trace_reason": "repair-drop"}}, "ordinary": {"ord-big": {"admitted": true, "trace_reason": "admitted"}}, "success": true}
