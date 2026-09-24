@@ -1,0 +1,42 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "amendment_id": "harness-amendment-03",
+  "reason": "oracle-leverage-v1 wave ran 24 agent sessions blind: static preflight (digests, versions, file presence) passed while the live observation/injection path was dead, so all 24 runs were transport-invalid and the behavioural question was never tested",
+  "failure": {
+    "result": "evidence/oracle-leverage-v1/result.json",
+    "overall_qualification": "INCONCLUSIVE",
+    "valid_behavioural_runs": 0,
+    "transport_invalid_runs": 24,
+    "stage": "pre-behavioural transport",
+    "inference_started": true,
+    "subject_model_calls": 24
+  },
+  "root_cause": {
+    "gate": "runtime_wiring checks repository package identity, never live capture health",
+    "missing": "liveness proof for the deployed plugin set before subject inference",
+    "compounding": "intervention plugin never deployed for the wave; globally installed observer was a stale pre-6D build"
+  },
+  "repair": {
+    "canonical_transport": "github:ernanhughes/project-context-opencode (single installable package; observer + runtime with in-code ordering)",
+    "preflight_gate": "transport_liveness, active only when preflight receives transport_canary",
+    "canary_contract": "canary.json from the package smoke test: observer canary PASS, runtime canary PASS, marker reconciliation exactly once post-mutation same session, requested vs observed provider/model attribution, plugin version plus commit, host version",
+    "gate_checks": "canary document identity, canary PASS, canary model equals scheduled subject model, attribution equality, canonical package identity, single-block injection growth, project-context-opencode present in opencode plugin list",
+    "fail_closed": "missing/unreadable canary, any mismatch, or absent package install fails preflight before subject inference",
+    "static_checks": "unchanged and still required; without a canary the preflight is static-only and must not authorize a wave",
+    "procedure": "run the package smoke test with the scheduled subject model, copy canary.json to .local/transport-canary.json (local-only, never committed), pass it to preflight"
+  },
+  "frozen_experimental_inputs_changed": false,
+  "behavioural_observations_before_amendment": 0,
+  "previous_amendment": "harness-amendment-02",
+  "original_harness_freeze_commit": "e5256e7",
+  "original_grader_digest": "1f7e02f1d1108733be9a7d8b0e1a1c9d8e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1",
+  "amendment01_runner_digest": "2b4f60e3fbc27282e4c7d8e3a475413B8bBA1E",
+  "amendment02_runner_digest": "613aa2f28c72d502e9c80c17814b0689ec5cf5d0389ee1cf187e2b82943826f7",
+  "new_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "new_runner_digest": "010c359a05cf165989ed7ff6af2e06514d3665d023e220ffc2306f5eed40d084",
+  "result_schema_identity": "project_context.leverage_result.v1",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "experiment_rerun": "not started under this amendment",
+  "amendment_digest": "322e825317ae5086332e96c4cddf5d953a50a6d8c79fad8bf2ff86ca7f3c04dd"
+}

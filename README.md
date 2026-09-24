@@ -256,6 +256,22 @@ tests/                 invariant and behaviour tests
 docs/                  stage reports
 ```
 
+## OpenCode integration
+
+The OpenCode observer/intervention pair lives in its own canonical
+package,
+[`project-context-opencode`](https://github.com/ernanhughes/project-context-opencode):
+
+```powershell
+opencode plugin add github:ernanhughes/project-context-opencode
+```
+
+This repository consumes that package as its OpenCode transport
+dependency; the frozen sources under `integrations/` are historical
+reference only (see `docs/opencode-integration.md`). Behavioural
+waves additionally require a live transport canary — see
+`experiments/oracle-leverage-v1/harness-amendment-03.json`.
+
 ## Privacy
 
 Public repository. Raw sessions, credentials, private code, and personal

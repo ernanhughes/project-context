@@ -487,7 +487,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     leverage = sub.add_parser("leverage", help="Oracle-leverage live-wave harness.")
     leverage_sub = leverage.add_subparsers(dest="leverage_command", required=True)
-    leverage_sub.add_parser("preflight", help="Verify all frozen identities; zero model calls.")
+    leverage_preflight = leverage_sub.add_parser(
+        "preflight", help="Verify all frozen identities; zero model calls."
+    )
+    leverage_preflight.add_argument(
+        "--transport-canary",
+        default="",
+        help="Path to a smoke-test canary.json enforcing the transport liveness gate.",
+    )
     exec_leverage = leverage_sub.add_parser("execute", help="Run the frozen 24-slot wave.")
     exec_leverage.add_argument(
         "--confirm",
@@ -1585,10 +1592,12 @@ def cmd_runtime_demo(case: str, output_format: str) -> int:
     return 0
 
 
-def cmd_leverage_preflight() -> int:
+def cmd_leverage_preflight(transport_canary: str = "") -> int:
     from project_context.leverage.run import preflight
 
-    report = preflight()
+    report = preflight(
+        transport_canary=transport_canary or None,
+    )
     checks = report["checks"]
     assert isinstance(checks, dict)
     for name in (
@@ -1600,9 +1609,11 @@ def cmd_leverage_preflight() -> int:
         "payload_binding",
         "hidden_truth_isolation",
         "runtime_wiring",
+        "transport_liveness",
         "overall",
     ):
-        print(f"{name}: {checks.get(name)}")
+        if name in checks:
+            print(f"{name}: {checks.get(name)}")
     identity = report.get("executable_identity", {})
     assert isinstance(identity, dict)
     print(f"requested executable: {identity.get('requested')}")
@@ -2170,7 +2181,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "runtime" and args.runtime_command == "demo":
         return cmd_runtime_demo(args.case, args.format)
     if args.command == "leverage" and args.leverage_command == "preflight":
-        return cmd_leverage_preflight()
+        return cmd_leverage_preflight(args.transport_canary)
     if args.command == "leverage" and args.leverage_command == "execute":
         return cmd_leverage_execute(args.confirm, args.wave_dir)
     return 2

@@ -667,10 +667,18 @@ def preflight(
     schedule_path: Path = SCHEDULE_PATH,
     fixtures_root: Path = FIXTURES_ROOT,
     entries: list[dict] | None = None,
+    transport_canary: str | Path | None = None,
 ) -> dict:
     """Static preflight: every frozen identity, no inference calls. The
     subject-model identity always comes from the frozen schedule; there
-    is no independent model default that could mask a mismatch."""
+    is no independent model default that could mask a mismatch.
+
+    When `transport_canary` is supplied (path to a smoke-test
+    canary.json), the transport_liveness gate is additionally enforced:
+    a live observer canary, a live runtime canary, their
+    reconciliation, and requested-vs-observed attribution, all for the
+    scheduled subject model. Without a canary the static checks run as
+    before; future waves must supply one (see harness-amendment-03)."""
     schedule = load_schedule(schedule_path)
     report: dict[str, object] = {"checks": {}, "subject_model_calls": 0, "fixture_probing_calls": 0}
     checks = report["checks"]
@@ -704,6 +712,10 @@ def preflight(
     checks["production_executable_resolution"] = (
         "PASS" if executable and version else f"FAIL: resolved={executable} version={version}"
     )
+    if transport_canary is not None:
+        checks["transport_liveness"] = _check_transport_liveness(
+            schedule, transport_canary
+        )
     checks["overall"] = "PASS" if all(str(v) == "PASS" for v in checks.values()) else "FAIL"
     return report
 
@@ -780,6 +792,56 @@ def _check_runtime_wiring(schedule: dict) -> str:
                 return f"FAIL: {package} entrypoint missing"
         if shutil.which("opencode") is None:
             return "FAIL: opencode not on PATH"
+        return "PASS"
+    except Exception as exc:
+        return f"FAIL: {exc}"
+
+
+def _check_transport_liveness(schedule: dict, canary: str | Path) -> str:
+    """Liveness gate (harness-amendment-03): verify what will execute,
+    not merely what exists in the repository.
+
+    The canary is the canary.json written by the canonical package's
+    smoke test (one trivial live request): observer canary, runtime
+    canary, marker reconciliation, and requested-vs-observed
+    attribution, all for the scheduled subject model, plus installed
+    package presence via `opencode plugin list`. Anything short of
+    that fails closed. No inference happens here; the canary carries
+    the single inference the operator already spent."""
+    try:
+        doc = json.loads(Path(canary).read_text(encoding="utf-8"))
+        if doc.get("canary") != "project-context transport liveness":
+            return "FAIL: not a transport canary document"
+        if doc.get("result") != "PASS":
+            return f"FAIL: canary result {doc.get('result')!r}"
+        subject = schedule.get("subject_model", {}).get("model")
+        if doc.get("requested_model") != subject:
+            return (
+                f"FAIL: canary model {doc.get('requested_model')!r} "
+                f"!= scheduled {subject!r}"
+            )
+        observed = f"{doc.get('observed_provider')}/{doc.get('observed_model')}"
+        if observed != doc.get("requested_model"):
+            return f"FAIL: canary attribution mismatch {observed!r}"
+        if doc.get("plugin_package") != "project-context-opencode":
+            return f"FAIL: canary from {doc.get('plugin_package')!r}"
+        for key in ("plugin_version", "plugin_commit", "session_id", "marker"):
+            if not doc.get(key):
+                return f"FAIL: canary missing {key}"
+        if int(doc.get("post_blocks", -1)) - int(doc.get("pre_blocks", -2)) != 1:
+            return "FAIL: canary shows no single-block injection"
+        executable = resolve_opencode_executable()
+        if executable is None:
+            return "FAIL: opencode executable unresolvable"
+        listed = subprocess.run(
+            [executable, "plugin", "list"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        if "project-context-opencode" not in (listed.stdout or ""):
+            return "FAIL: project-context-opencode not installed"
         return "PASS"
     except Exception as exc:
         return f"FAIL: {exc}"

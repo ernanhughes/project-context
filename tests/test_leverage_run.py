@@ -605,3 +605,117 @@ def test_cli_preflight_and_execute_guard(monkeypatch, tmp_path):
     wave = tmp_path / "wave"
     assert main(["leverage", "execute", "--confirm", "--wave-dir", str(wave)]) == 0
     assert (wave / "result.json").is_file()
+
+
+# --- transport liveness gate (harness-amendment-03) ------------------
+
+
+def _canary(**overrides: object) -> dict:
+    doc = {
+        "canary": "project-context transport liveness",
+        "result": "PASS",
+        "marker": "TEST-MARKER-1",
+        "session_id": "ses_test",
+        "invocation_sequence": 1,
+        "pre_blocks": 4,
+        "post_blocks": 5,
+        "requested_model": "ollama/mistral-small:latest",
+        "observed_provider": "ollama",
+        "observed_model": "mistral-small:latest",
+        "observed_variant": None,
+        "opencode_version": "2.0.16",
+        "plugin_package": "project-context-opencode",
+        "plugin_version": "0.1.0",
+        "plugin_commit": "test-commit",
+        "completed_at": "2026-09-24T00:00:00+00:00",
+    }
+    doc.update(overrides)
+    return doc
+
+
+def _write_canary(tmp_path: Path, **overrides: object) -> Path:
+    path = tmp_path / "canary.json"
+    path.write_text(json.dumps(_canary(**overrides)), encoding="utf-8")
+    return path
+
+
+def test_transport_liveness_absent_by_default():
+    report = preflight(entries=GOOD_ENTRIES)
+    assert "transport_liveness" not in report["checks"]
+    assert report["checks"]["overall"] == "PASS"
+
+
+def test_transport_liveness_missing_canary_fails_closed(tmp_path):
+    report = preflight(
+        entries=GOOD_ENTRIES, transport_canary=str(tmp_path / "absent.json")
+    )
+    assert report["checks"]["transport_liveness"].startswith("FAIL")
+    assert report["checks"]["overall"] == "FAIL"
+
+
+def test_transport_liveness_wrong_model_fails(tmp_path, monkeypatch):
+    from project_context.leverage import run as run_mod
+
+    monkeypatch.setattr(
+        run_mod, "resolve_opencode_executable", lambda: "opencode"
+    )
+    canary = _write_canary(tmp_path, requested_model="other/model:tag")
+    report = preflight(entries=GOOD_ENTRIES, transport_canary=str(canary))
+    assert "scheduled" in report["checks"]["transport_liveness"]
+    assert report["checks"]["overall"] == "FAIL"
+
+
+def test_transport_liveness_nonpass_canary_fails(tmp_path, monkeypatch):
+    from project_context.leverage import run as run_mod
+
+    monkeypatch.setattr(
+        run_mod, "resolve_opencode_executable", lambda: "opencode"
+    )
+    canary = _write_canary(tmp_path, result="FAIL")
+    report = preflight(entries=GOOD_ENTRIES, transport_canary=str(canary))
+    assert report["checks"]["transport_liveness"].startswith("FAIL")
+    assert report["checks"]["overall"] == "FAIL"
+
+
+def test_transport_liveness_passes_with_matching_canary(tmp_path, monkeypatch):
+    import subprocess as subprocess_mod
+
+    from project_context.leverage import run as run_mod
+
+    monkeypatch.setattr(
+        run_mod, "resolve_opencode_executable", lambda: "opencode"
+    )
+
+    class Listed:
+        returncode = 0
+        stdout = "project-context  0.1.0  github:ernanhughes/project-context-opencode"
+
+    monkeypatch.setattr(
+        subprocess_mod, "run", lambda *a, **k: Listed()
+    )
+    canary = _write_canary(tmp_path)
+    report = preflight(entries=GOOD_ENTRIES, transport_canary=str(canary))
+    assert report["checks"]["transport_liveness"] == "PASS"
+    assert report["checks"]["overall"] == "PASS"
+
+
+def test_transport_liveness_missing_package_fails(tmp_path, monkeypatch):
+    import subprocess as subprocess_mod
+
+    from project_context.leverage import run as run_mod
+
+    monkeypatch.setattr(
+        run_mod, "resolve_opencode_executable", lambda: "opencode"
+    )
+
+    class Listed:
+        returncode = 0
+        stdout = "code-review-graph  local  somewhere"
+
+    monkeypatch.setattr(
+        subprocess_mod, "run", lambda *a, **k: Listed()
+    )
+    canary = _write_canary(tmp_path)
+    report = preflight(entries=GOOD_ENTRIES, transport_canary=str(canary))
+    assert "not installed" in report["checks"]["transport_liveness"]
+    assert report["checks"]["overall"] == "FAIL"
