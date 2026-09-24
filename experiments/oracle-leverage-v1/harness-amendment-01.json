@@ -1,0 +1,27 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "amendment_id": "harness-amendment-01",
+  "reason": "frozen harness compared provider-qualified schedule identity against bare daemon tags; identity proof failed deterministically before r001 across two attempts",
+  "affected_component": "model metadata identity verification only (leverage/run.py)",
+  "original_harness_freeze_commit": "e5256e7",
+  "original_grader_digest": "1f7e02f1d1108733be9a7d8b0e1a1c9d8e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1",
+  "original_runner_digest": "cd5ec4f821b6d6fb8a0c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f809a0b1c2d3e4f5",
+  "new_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "new_runner_digest": "2b4f60e3fbc272824d62cd0bd641b77bae936529d1c6b3825480c1319672147e",
+  "result_schema_identity": "project_context.leverage_result.v1",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "behavioural_observations_before_amendment": 0,
+  "subject_model_calls_before_amendment": 0,
+  "defect": {
+    "schedule_identity_form": "ollama/mistral-small:latest",
+    "provider_local_identity_form": "mistral-small:latest",
+    "previous_failure": "(False, None) exact-name lookup miss; preflight masked via independent bare default"
+  },
+  "repair": {
+    "canonical_provider_aware_normalization": "partition provider namespace; local names keep slashes",
+    "shared_preflight_run_wave_verification_path": "verify_scheduled_model from frozen schedule; no independent model default"
+  },
+  "frozen_experimental_inputs_changed": false,
+  "amendment_digest": "d4f408785fbd305a71d09fc09845834130261fef36393abd8a23599a6fdbfcb4"
+}

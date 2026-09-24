@@ -20,8 +20,10 @@ from project_context.leverage.run import (
     build_run_env,
     check_model_digest,
     execute_slot,
+    fetch_daemon_tags,
     grade_workspace,
     load_schedule,
+    parse_model_identity,
     preflight,
     production_executor,
     render_condition_payload,
@@ -29,6 +31,7 @@ from project_context.leverage.run import (
     seed_workspace,
     snapshot_spool,
     verify_freeze,
+    verify_scheduled_model,
 )
 
 __all__ = [
@@ -48,10 +51,12 @@ __all__ = [
     "build_run_env",
     "check_model_digest",
     "execute_slot",
+    "fetch_daemon_tags",
     "grade_fixture",
     "grade_utilisation",
     "grade_workspace",
     "load_schedule",
+    "parse_model_identity",
     "preflight",
     "production_executor",
     "render_condition_payload",
@@ -59,4 +64,5 @@ __all__ = [
     "seed_workspace",
     "snapshot_spool",
     "verify_freeze",
+    "verify_scheduled_model",
 ]

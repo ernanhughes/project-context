@@ -153,20 +153,87 @@ def _fixture_input_digest(task_dir: Path) -> str:
 def check_model_digest(
     expected: str, model: str = "mistral-small:latest", timeout: int = 20
 ) -> tuple[bool, str | None]:
-    """Metadata-only model identity check. No inference call is made."""
+    """Metadata-only model identity check. No inference call is made.
+
+    Retained for compatibility; new code must use verify_scheduled_model,
+    which derives identity from the frozen schedule through
+    parse_model_identity instead of an independent default."""
+    provider, local = parse_model_identity(model)
+    return _verify_against_tags(expected, provider, local, timeout=timeout)
+
+
+def parse_model_identity(qualified: str) -> tuple[str, str]:
+    """Split an execution identity into (provider, provider-local name).
+
+    Only the provider namespace is removed, intentionally: local names
+    may themselves contain slashes, so ollama/org/model:tag keeps
+    org/model:tag. A bare name has an empty provider and is used
+    verbatim as the local name."""
+    if "/" in qualified:
+        provider, _, local = qualified.partition("/")
+        return provider, local
+    return "", qualified
+
+
+def fetch_daemon_tags(timeout: int = 20) -> list[dict]:
+    """Local Ollama tag-list metadata. No inference call is made."""
+    request = urllib.request.Request(
+        "http://localhost:11434/api/tags",
+        headers={"Content-Type": "application/json"},
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    entries = payload.get("models", [])
+    return entries if isinstance(entries, list) else []
+
+
+def verify_scheduled_model(
+    schedule: dict, entries: list[dict] | None = None, timeout: int = 20
+) -> dict[str, object]:
+    """Shared model-identity verification for preflight AND execution.
+
+    Derives the qualified identity from the frozen schedule, resolves
+    the provider-local daemon entry, and compares digests. Returns a
+    detail record; ok is True only on full digest match."""
+    qualified = str(schedule["subject_model"]["model"])
+    expected = str(schedule["subject_model"].get("expected_digest", ""))
+    provider, local = parse_model_identity(qualified)
+    if entries is None:
+        try:
+            entries = fetch_daemon_tags(timeout=timeout)
+        except Exception:
+            entries = []
+    actual: str | None = None
+    if provider in ("", "ollama"):
+        for entry in entries:
+            if isinstance(entry, dict) and entry.get("name") == local:
+                digest = entry.get("digest", "")
+                actual = str(digest) if digest else None
+                break
+    return {
+        "qualified": qualified,
+        "provider": provider,
+        "provider_local": local,
+        "expected_digest": expected,
+        "actual_digest": actual,
+        "ok": actual is not None and actual == expected,
+    }
+
+
+def _verify_against_tags(
+    expected: str, provider: str, local: str, timeout: int = 20
+) -> tuple[bool, str | None]:
     try:
-        request = urllib.request.Request(
-            "http://localhost:11434/api/tags",
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        entries = fetch_daemon_tags(timeout=timeout)
     except Exception:
         return False, None
-    for entry in payload.get("models", []):
-        if entry.get("name") == model:
-            actual = str(entry.get("digest", ""))
-            return actual == expected, actual or None
+    if provider not in ("", "ollama"):
+        return False, None
+    for entry in entries:
+        if isinstance(entry, dict) and entry.get("name") == local:
+            digest = entry.get("digest", "")
+            actual = str(digest) if digest else None
+            return (actual is not None and actual == expected), actual
     return False, None
 
 
@@ -565,21 +632,23 @@ def build_result_artifact(
 def preflight(
     schedule_path: Path = SCHEDULE_PATH,
     fixtures_root: Path = FIXTURES_ROOT,
-    expected_model: str = "mistral-small:latest",
-    model_check: object = None,
+    entries: list[dict] | None = None,
 ) -> dict:
-    """Static preflight: every frozen identity, no inference calls."""
+    """Static preflight: every frozen identity, no inference calls. The
+    subject-model identity always comes from the frozen schedule; there
+    is no independent model default that could mask a mismatch."""
     schedule = load_schedule(schedule_path)
     report: dict[str, object] = {"checks": {}, "subject_model_calls": 0, "fixture_probing_calls": 0}
     checks = report["checks"]
     assert isinstance(checks, dict)
     errors = verify_freeze(schedule, fixtures_root)
     checks["freeze_identities"] = "PASS" if not errors else f"FAIL: {errors}"
-    expected_digest = str(schedule["subject_model"].get("expected_digest", ""))
-    check = model_check if model_check is not None else check_model_digest
-    ok, actual = check(expected_digest, expected_model)  # type: ignore[operator]
+    detail = verify_scheduled_model(schedule, entries=entries)
+    report["model_identity"] = detail
+    expected12 = str(detail["expected_digest"])[:12]
+    actual12 = str(detail["actual_digest"] or "none")[:12]
     checks["model_metadata_identity"] = (
-        "PASS" if ok else f"FAIL: expected {expected_digest[:12]} got {(actual or 'none')[:12]}"
+        "PASS" if detail["ok"] else f"FAIL: expected {expected12} got {actual12}"
     )
     checks["schedule_slots"] = "PASS" if len(schedule.get("runs", [])) == 24 else "FAIL"
     try:
@@ -680,19 +749,18 @@ def run_wave(
     wave_dir: Path,
     executor: object,
     model_digest: str | None,
-    model_check: object = None,
+    entries: list[dict] | None = None,
 ) -> dict:
     """Execute schedule slots in recorded order. Hard validity failures
     stop the wave with completed runs preserved; transport failure marks
     one run invalid and the wave continues. No schedule deviation."""
-    check = model_check if model_check is not None else check_model_digest
-    expected = str(schedule["subject_model"].get("expected_digest", ""))
-    model = str(schedule["subject_model"].get("model", "mistral-small:latest"))
-    ok, actual = check(expected, model)  # type: ignore[operator]
-    if not ok:
+    detail = verify_scheduled_model(schedule, entries=entries)
+    if not detail["ok"]:
         raise WaveStop(
-            f"model digest mismatch: expected {expected[:12]} got {(actual or 'none')[:12]}"
+            f"model digest mismatch: expected {str(detail['expected_digest'])[:12]} "
+            f"got {str(detail['actual_digest'] or 'none')[:12]}"
         )
+    actual = str(detail["actual_digest"]) if detail["actual_digest"] else None
     errors = verify_freeze(schedule, fixtures_root)
     if errors:
         raise WaveStop(f"frozen identity failure: {errors}")

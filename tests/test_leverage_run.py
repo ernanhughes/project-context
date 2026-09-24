@@ -216,6 +216,10 @@ def test_hidden_truth_isolation_and_env():
         _rmtree(wave)
 
 
+GOOD_DIGEST = "8039dd90c1138d772437a0779a33b7349efd5d9cca71edcd26e4dd463f90439d"
+GOOD_ENTRIES = [{"name": "mistral-small:latest", "digest": GOOD_DIGEST}]
+
+
 def test_model_digest_mismatch_stops_wave():
     schedule = json.loads(
         (Path("experiments") / "oracle-leverage-v1" / "schedule.json").read_text()
@@ -229,7 +233,7 @@ def test_model_digest_mismatch_stops_wave():
                 wave,
                 FakeExecutor({}),
                 None,
-                model_check=lambda expected, model: (False, "deadbeef"),
+                entries=[{"name": "mistral-small:latest", "digest": "deadbeef"}],
             )
         except WaveStop as exc:
             assert "model digest mismatch" in exc.reason
@@ -237,7 +241,7 @@ def test_model_digest_mismatch_stops_wave():
             raise AssertionError("expected WaveStop")
         assert not wave.exists()
     finally:
-        _rmtree(wave)
+        _rmtree(wave.parent)
 
 
 def test_fixture_mismatch_stops_wave_with_prefix_preserved(monkeypatch):
@@ -265,7 +269,7 @@ def test_fixture_mismatch_stops_wave_with_prefix_preserved(monkeypatch):
             wave,
             FakeExecutor({}),
             "test-digest",
-            model_check=lambda expected, model: (True, expected),
+            entries=GOOD_ENTRIES,
         )
         assert artifact["hard_stop"] is not None
         assert "wrong starting repo state" in artifact["hard_stop"]
@@ -324,10 +328,12 @@ def test_condition_blind_grading_across_slots():
 
 
 def test_preflight_passes_with_zero_calls():
-    report = preflight(model_check=lambda expected, model: (True, expected))
+    report = preflight(entries=GOOD_ENTRIES)
     assert report["subject_model_calls"] == 0
     assert report["fixture_probing_calls"] == 0
     assert report["checks"]["overall"] == "PASS"
+    assert report["model_identity"]["qualified"] == "ollama/mistral-small:latest"
+    assert report["model_identity"]["provider_local"] == "mistral-small:latest"
 
 
 def test_economics_model_roundtrip():
@@ -336,12 +342,134 @@ def test_economics_model_roundtrip():
     assert full["reported_cost"] is None
 
 
+def _schedule():
+    return json.loads((Path("experiments") / "oracle-leverage-v1" / "schedule.json").read_text())
+
+
+def test_identity_qualified_ollama_name_resolves():
+    from project_context.leverage.run import parse_model_identity, verify_scheduled_model
+
+    assert parse_model_identity("ollama/mistral-small:latest") == ("ollama", "mistral-small:latest")
+    detail = verify_scheduled_model(_schedule(), entries=[dict(e) for e in GOOD_ENTRIES])
+    assert detail["qualified"] == "ollama/mistral-small:latest"
+    assert detail["provider"] == "ollama"
+    assert detail["provider_local"] == "mistral-small:latest"
+    assert detail["ok"] is True
+    assert detail["actual_digest"] == detail["expected_digest"]
+
+
+def test_identity_wrong_digest_still_fails():
+    from project_context.leverage.run import verify_scheduled_model
+
+    entries = [{"name": "mistral-small:latest", "digest": "0" * 64}]
+    detail = verify_scheduled_model(_schedule(), entries=entries)
+    assert detail["ok"] is False
+    assert detail["actual_digest"] == "0" * 64
+
+
+def test_identity_missing_entry_fails():
+    from project_context.leverage.run import verify_scheduled_model
+
+    detail = verify_scheduled_model(_schedule(), entries=[])
+    assert detail["ok"] is False
+    assert detail["actual_digest"] is None
+
+
+def test_identity_wrong_provider_does_not_alias():
+    from project_context.leverage.run import parse_model_identity, verify_scheduled_model
+
+    schedule = _schedule()
+    schedule = json.loads(json.dumps(schedule))
+    schedule["subject_model"] = dict(schedule["subject_model"])
+    schedule["subject_model"]["model"] = "other-registry/mistral-small:latest"
+    assert parse_model_identity("other-registry/mistral-small:latest") == (
+        "other-registry",
+        "mistral-small:latest",
+    )
+    detail = verify_scheduled_model(schedule, entries=[dict(e) for e in GOOD_ENTRIES])
+    assert detail["ok"] is False
+    assert detail["actual_digest"] is None
+
+
+def test_identity_slash_local_name_kept_intact():
+    from project_context.leverage.run import parse_model_identity
+
+    assert parse_model_identity("ollama/org/model:tag") == ("ollama", "org/model:tag")
+    assert parse_model_identity("mistral-small:latest") == ("", "mistral-small:latest")
+
+
+def test_preflight_and_wave_share_verifier():
+    import inspect
+
+    from project_context.leverage import run as run_mod
+
+    preflight_params = set(inspect.signature(run_mod.preflight).parameters)
+    assert "expected_model" not in preflight_params
+    assert "model_check" not in preflight_params
+    report = run_mod.preflight(entries=[dict(e) for e in GOOD_ENTRIES])
+    assert report["checks"]["model_metadata_identity"] == "PASS"
+    assert report["model_identity"]["qualified"] == "ollama/mistral-small:latest"
+
+
+def test_wave_reaches_inference_boundary_after_identity():
+    from project_context.leverage import run as run_mod
+
+    schedule = _schedule()
+    wave = Path(tempfile.mkdtemp()) / "wave"
+
+    class Sentinel(Exception):
+        pass
+
+    def sentinel_executor(slot, schedule, workspace, run_dir, env):
+        raise Sentinel("inference boundary crossed")
+
+    try:
+        try:
+            run_mod.run_wave(
+                schedule,
+                FIXTURES,
+                wave,
+                sentinel_executor,
+                "test-digest",
+                entries=[dict(e) for e in GOOD_ENTRIES],
+            )
+        except Sentinel:
+            pass
+        else:
+            raise AssertionError("expected Sentinel (identity passed, inference reached)")
+    finally:
+        _rmtree(wave.parent)
+
+
+def test_wave_stops_before_inference_on_identity_failure():
+    schedule = _schedule()
+    wave = Path(tempfile.mkdtemp()) / "wave"
+    calls = []
+
+    def counting_executor(slot, schedule, workspace, run_dir, env):
+        calls.append(slot["run_id"])
+        raise AssertionError("must not reach inference")
+
+    try:
+        try:
+            run_wave(schedule, FIXTURES, wave, counting_executor, None, entries=[])
+        except WaveStop as exc:
+            assert "model digest mismatch" in exc.reason
+        else:
+            raise AssertionError("expected WaveStop")
+        assert calls == []
+    finally:
+        _rmtree(wave.parent)
+
+
 def test_cli_preflight_and_execute_guard(monkeypatch, tmp_path):
     from project_context.cli.main import main
     from project_context.leverage import run as run_mod
 
     monkeypatch.setattr(
-        run_mod, "check_model_digest", lambda expected, model="m", timeout=20: (True, expected)
+        run_mod,
+        "fetch_daemon_tags",
+        lambda timeout=20: [dict(entry) for entry in GOOD_ENTRIES],
     )
     assert main(["leverage", "preflight"]) == 0
     assert main(["leverage", "execute"]) == 2
