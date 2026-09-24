@@ -143,6 +143,22 @@ analysis reads files. A source scan test pins this invariant.
     mismatch fails clearly; there is no V1 fallback and no dual-version
     runtime.
 
+## Reproducibility invariants
+
+39. **Record the strongest reader identity available, and never invent
+    one.** A live reader's manifest carries the model digest when the
+    endpoint exposes it (`reader_model_digest`, with its source) and
+    says `unavailable` otherwise. A model configured with a moving alias
+    (no tag, or `:latest`) is refused by `behavior run` unless
+    `--allow-moving-model-alias` is passed, and the run is then recorded
+    as non-reproducible from the name. Frozen fixture manifests are
+    historical records and are never edited to hide an alias; a rerun is
+    a new run.
+40. **Every frozen run the book cites has a committed evidence manifest**
+    (`evidence/manifests/`, `scripts/evidence_manifest.py`) whose numbers
+    are recomputed from the artifacts. Raw artifacts stay local until
+    sanitisation plus recorded human approval (rule 5).
+
 ## Before implementing any mechanism
 
 Check, in order: the book chapter that earns it, the frozen experiment

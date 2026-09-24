@@ -120,6 +120,13 @@ compiler insertion into live context, TUI, semantic duplicate
 detection, behavioural utility inference, provider-wire capture. The
 debugger observes; it changes nothing. See `docs/stage-5-report.md`.
 
+## Evidence manifests
+
+Frozen runs stay local (`.local/runs/`, git-ignored). `evidence/manifests/`
+pins each run the book cites by artifact digest and recomputed headline
+numbers; `python scripts/evidence_manifest.py --verify` checks them. See
+`evidence/README.md` for the publication policy.
+
 ## Setup
 
 Requires Python 3.11+ (3.12+ preferred) and [`uv`](https://docs.astral.sh/uv/).

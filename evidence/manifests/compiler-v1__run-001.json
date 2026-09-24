@@ -1,0 +1,140 @@
+{
+  "artifact_files": [
+    {
+      "bytes": 491199,
+      "name": "compilation.jsonl",
+      "sha256": "7b09a79ae333689e0f088cf484ac2d16d1d16647fd272c6d4e5e5eceec052bf8"
+    },
+    {
+      "bytes": 665,
+      "name": "manifest.json",
+      "sha256": "a19509e6474f346ef3888aba702a10c129d0d6c0d0fa7aa9b1a1bcd3135ae1cb"
+    },
+    {
+      "bytes": 103805,
+      "name": "observations.jsonl",
+      "sha256": "c51efaf8d0eed95183d10011254f33e7b1a884568daaf9832c30e521e84169fc"
+    },
+    {
+      "bytes": 585,
+      "name": "README.md",
+      "sha256": "934dcb17362942b277775820f169512ceb0131277f12deec51078a75dfef2084"
+    },
+    {
+      "bytes": 198962,
+      "name": "results.json",
+      "sha256": "04b2617f539cef7cc81e3ff05c172979affe4174fb901964b9cb3768fc93ecfb"
+    }
+  ],
+  "artifact_location": ".local/runs/compiler-v1/run-001/ (local-only, git-ignored)",
+  "cited_by_book_chapters": [
+    23,
+    24
+  ],
+  "code_commit": "ec642dc9c15e3822506dbc93e03db7667e297921",
+  "code_commit_subject": "Implement deterministic synthetic context compiler",
+  "experiment_id": "compiler-v1",
+  "known_limitations": [
+    "Local-only artifact: the run directory is git-ignored and not published; this manifest pins it by digest so the book's numbers are checkable by anyone holding a copy.",
+    "The run's own README (frozen, never edited) reads 'NOT A BOOK RESULT'. That was the label at freeze time; promotion to a book result is made by the book chapters that cite this manifest.",
+    "Recorded timestamps are the fixed placeholder 2026-09-23T00:00:00Z, not wall-clock times."
+  ],
+  "recomputed_summary": {
+    "budgets": 3,
+    "combinations": 252,
+    "fixtures": 14,
+    "per_strategy": {
+      "dump": {
+        "authority_violations": 0,
+        "combinations": 42,
+        "dependency_violations": 1,
+        "distractor_admission": 18,
+        "floor_violations": 3,
+        "freshness_violations": 4,
+        "group_violations": 0,
+        "harmful_admission": 3,
+        "illegal_admission": 12,
+        "scope_violations": 5,
+        "status_correct": 34
+      },
+      "gated": {
+        "authority_violations": 0,
+        "combinations": 42,
+        "dependency_violations": 1,
+        "distractor_admission": 9,
+        "floor_violations": 0,
+        "freshness_violations": 0,
+        "group_violations": 1,
+        "harmful_admission": 2,
+        "illegal_admission": 0,
+        "scope_violations": 0,
+        "status_correct": 34
+      },
+      "oracle": {
+        "authority_violations": 0,
+        "combinations": 42,
+        "dependency_violations": 0,
+        "distractor_admission": 0,
+        "floor_violations": 0,
+        "freshness_violations": 0,
+        "group_violations": 0,
+        "harmful_admission": 0,
+        "illegal_admission": 0,
+        "scope_violations": 0,
+        "status_correct": 42
+      },
+      "staged": {
+        "authority_violations": 0,
+        "combinations": 42,
+        "dependency_violations": 0,
+        "distractor_admission": 5,
+        "floor_violations": 0,
+        "freshness_violations": 0,
+        "group_violations": 0,
+        "harmful_admission": 2,
+        "illegal_admission": 0,
+        "scope_violations": 0,
+        "status_correct": 42
+      },
+      "topk": {
+        "authority_violations": 0,
+        "combinations": 42,
+        "dependency_violations": 1,
+        "distractor_admission": 18,
+        "floor_violations": 3,
+        "freshness_violations": 6,
+        "group_violations": 1,
+        "harmful_admission": 2,
+        "illegal_admission": 15,
+        "scope_violations": 6,
+        "status_correct": 34
+      },
+      "weighted": {
+        "authority_violations": 0,
+        "combinations": 42,
+        "dependency_violations": 1,
+        "distractor_admission": 17,
+        "floor_violations": 3,
+        "freshness_violations": 6,
+        "group_violations": 0,
+        "harmful_admission": 1,
+        "illegal_admission": 15,
+        "scope_violations": 6,
+        "status_correct": 34
+      }
+    },
+    "strategies": 6
+  },
+  "run_id": "run-001",
+  "run_manifest": {
+    "environment": {
+      "token_mode": "estimate_tokens-words1.3",
+      "vcs_dirty": "False"
+    },
+    "evidence_class": "synthetic",
+    "experiment_version": "1",
+    "fixture_version": "1",
+    "policy_version": "compiler-policy-v1"
+  },
+  "schema_version": "project_context.evidence_manifest.v1"
+}
