@@ -1,1 +1,103 @@
-{"admission": "all ADMIT after adversarial review; see README", "conditions": ["N", "D", "O"], "deferred": ["X stale-context (wave 2)", "compiler-selected (selection stage)"], "evidence_class": "synthetic", "evidence_note": "SYNTHETIC pre-run counterfactual fixtures. No model has run against them; no behavioural claim exists.", "experiment": "oracle-leverage-v1", "fixture_version": "1", "fixtures": [{"fixture_id": "t01-legacy-case", "latent_category": "migration invariant", "observable": "output bytes preserve original case", "oracle_chars": 184, "verdict": "ADMIT"}, {"fixture_id": "t02-retry-idempotency", "latent_category": "external API contract", "observable": "idempotency header present with bounded retry", "oracle_chars": 194, "verdict": "ADMIT"}, {"fixture_id": "t03-stable-board", "latent_category": "ordering requirement", "observable": "tied scores keep registration order on stdout", "oracle_chars": 164, "verdict": "ADMIT"}, {"fixture_id": "t04-utc-stamp", "latent_category": "persisted data format", "observable": "stored timestamps carry UTC offset", "oracle_chars": 159, "verdict": "ADMIT"}, {"fixture_id": "t05-version-header", "latent_category": "protocol/version contract", "observable": "API version header present in requests", "oracle_chars": 190, "verdict": "ADMIT"}, {"fixture_id": "t06-legal-hold", "latent_category": "operational policy", "observable": "held sessions retained and flagged", "oracle_chars": 163, "verdict": "ADMIT"}, {"fixture_id": "t07-closed-schema", "latent_category": "cross-repository consumer", "observable": "email nested under contact, no new top-level fields", "oracle_chars": 186, "verdict": "ADMIT"}, {"fixture_id": "t08-eu-residency", "latent_category": "deployment/environment constraint", "observable": "EU checkout enabled with EU region store", "oracle_chars": 148, "verdict": "ADMIT"}]}
+{
+  "experiment": "oracle-leverage-v1",
+  "fixture_version": "1",
+  "freeze_status": "PRE-RUN FROZEN",
+  "corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "evidence_class": "synthetic",
+  "evidence_note": "SYNTHETIC pre-run counterfactual fixtures. No model has run against them; no behavioural claim exists.",
+  "conditions": [
+    "N",
+    "D",
+    "O"
+  ],
+  "deferred": [
+    "X stale-context (wave 2)",
+    "compiler-selected (selection stage)"
+  ],
+  "experimental_calls": {
+    "subject_model": 0,
+    "fixture_probing": 0
+  },
+  "fixtures": [
+    {
+      "fixture_id": "t01-legacy-case",
+      "latent_category": "migration invariant",
+      "observable": "output bytes preserve original case",
+      "oracle_chars": 184,
+      "distractor_chars": 172,
+      "verdict": "ADMIT",
+      "revision": null,
+      "input_digest": "4f835219068361eb986e9f96d61724ea572dd8e45f3736f1268d9fb8c5b52151"
+    },
+    {
+      "fixture_id": "t02-retry-idempotency",
+      "latent_category": "external API contract",
+      "observable": "idempotency header present with bounded retry",
+      "oracle_chars": 211,
+      "distractor_chars": 200,
+      "verdict": "REVISE-ADMIT",
+      "revision": "oracle names Idempotency-Key header; observable demanded a token O never supplied",
+      "input_digest": "9edf060ec1001a5fe711e95176668dc92a79891c73e59af90db4eddc447ae98e"
+    },
+    {
+      "fixture_id": "t03-stable-board",
+      "latent_category": "ordering requirement",
+      "observable": "tied scores keep registration order on stdout",
+      "oracle_chars": 164,
+      "distractor_chars": 138,
+      "verdict": "ADMIT",
+      "revision": null,
+      "input_digest": "fba56a10ea25406ef4c65ed26499569fa3d5d74e6ce5404c13d65d87696febee"
+    },
+    {
+      "fixture_id": "t04-utc-stamp",
+      "latent_category": "persisted data format",
+      "observable": "stored timestamps carry UTC offset",
+      "oracle_chars": 181,
+      "distractor_chars": 156,
+      "verdict": "REVISE-ADMIT",
+      "revision": "oracle names +00:00 encoding; observable demanded a form O never supplied",
+      "input_digest": "f35d0fdb9a85a2926dda46097dc23b82b1dcb93870da04e0968bda2cba2d0463"
+    },
+    {
+      "fixture_id": "t05-version-header",
+      "latent_category": "protocol/version contract",
+      "observable": "API version header present in requests",
+      "oracle_chars": 180,
+      "distractor_chars": 210,
+      "verdict": "REVISE-ADMIT",
+      "revision": "oracle names X-API-Version header; observable demanded a token O never supplied",
+      "input_digest": "75a7cc3e1f49f92d2deaa74b9e632c55b21637419098eb0130096b71f5ea2dc4"
+    },
+    {
+      "fixture_id": "t06-legal-hold",
+      "latent_category": "operational policy",
+      "observable": "held sessions retained and flagged",
+      "oracle_chars": 163,
+      "distractor_chars": 148,
+      "verdict": "REVISE-ADMIT",
+      "revision": "truth dropped unsupplied under_review token; retention-only observable",
+      "input_digest": "690cfeb980b2270423b78b4112ede013c867af7f050a2fb2da30afb07fbc73c9"
+    },
+    {
+      "fixture_id": "t07-closed-schema",
+      "latent_category": "cross-repository consumer",
+      "observable": "email nested under contact, no new top-level fields",
+      "oracle_chars": 186,
+      "distractor_chars": 200,
+      "verdict": "ADMIT",
+      "revision": null,
+      "input_digest": "f71c5449ba2ca98452e01c7eb016a05a049317c1d9f1efa29389af52f6e9c35b"
+    },
+    {
+      "fixture_id": "t08-eu-residency",
+      "latent_category": "deployment/environment constraint",
+      "observable": "EU checkout enabled with EU region store",
+      "oracle_chars": 148,
+      "distractor_chars": 128,
+      "verdict": "ADMIT",
+      "revision": null,
+      "input_digest": "76adb2cf7d0666d989afc8e93f76e83f7e48fcc2630caf553d11fef414a98ee1"
+    }
+  ]
+}
