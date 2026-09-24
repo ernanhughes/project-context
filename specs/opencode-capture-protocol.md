@@ -62,7 +62,7 @@ from the book remains the ecological bar.
 
 Task text, prompts, file contents, paths, repository names, session or
 message IDs, user information, secrets. Manifests carry counts, ranges,
-hashes of sanitised artifacts, and statuses only.
+digests of published files (never of raw content), and statuses only.
 
 ## Session identity (operational definition)
 

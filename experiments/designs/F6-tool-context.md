@@ -1,7 +1,7 @@
 # F6 — Tool context (design)
 
 Status: design only, and **conditional**. It runs only if the ecological corpus
-shows tool definitions are a meaningful share of real context (decision trigger in
+shows tool definitions are a meaningful share of real context (routing trigger in
 the corpus preregistration). If not, the tool chapter's standing-cost claim is
 reduced to a description of the harness observed, and this family is not run.
 
