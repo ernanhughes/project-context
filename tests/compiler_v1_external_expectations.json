@@ -1,0 +1,530 @@
+{
+  "cases": {
+    "budget-slack/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "useful-disc"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "66beba878f7cdd5bb4c94dce2501820120978ad7c0e56bbc006166a4eab9a4a6",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "budget-slack/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "useful-disc"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "66beba878f7cdd5bb4c94dce2501820120978ad7c0e56bbc006166a4eab9a4a6",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "budget-slack/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "useful-disc"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "66beba878f7cdd5bb4c94dce2501820120978ad7c0e56bbc006166a4eab9a4a6",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "conflict-trap/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "claim-a",
+        "claim-b",
+        "conflict-marker"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "2e75be929fd2e728e66bb56bafc127b2b2cad29a548ed48daf8343211d0e1fd1",
+      "bundle_tokens": 283,
+      "reason": null,
+      "success": true
+    },
+    "conflict-trap/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "claim-a",
+        "claim-b",
+        "conflict-marker"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "2e75be929fd2e728e66bb56bafc127b2b2cad29a548ed48daf8343211d0e1fd1",
+      "bundle_tokens": 283,
+      "reason": null,
+      "success": true
+    },
+    "conflict-trap/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "claim-a",
+        "claim-b",
+        "conflict-marker"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "2e75be929fd2e728e66bb56bafc127b2b2cad29a548ed48daf8343211d0e1fd1",
+      "bundle_tokens": 283,
+      "reason": null,
+      "success": true
+    },
+    "dependency-cycle/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "cyc-a",
+        "cyc-b"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "26281a654f8c915af04a5b91032a82ca4c0f98f257c40df2d4e342158c6e2a09",
+      "bundle_tokens": 339,
+      "reason": null,
+      "success": true
+    },
+    "dependency-cycle/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "cyc-a",
+        "cyc-b"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "26281a654f8c915af04a5b91032a82ca4c0f98f257c40df2d4e342158c6e2a09",
+      "bundle_tokens": 339,
+      "reason": null,
+      "success": true
+    },
+    "dependency-cycle/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "cyc-a",
+        "cyc-b"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "26281a654f8c915af04a5b91032a82ca4c0f98f257c40df2d4e342158c6e2a09",
+      "bundle_tokens": 339,
+      "reason": null,
+      "success": true
+    },
+    "dependency-trap/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "ref-cheap",
+        "distract-big",
+        "resolver-tool"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "2dfa29205af389ccfd3934ff3471e03879182e85ff3c51512f2f7d23c24bc46b",
+      "bundle_tokens": 1093,
+      "reason": null,
+      "success": true
+    },
+    "dependency-trap/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "ref-cheap",
+        "distract-big",
+        "resolver-tool"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "2dfa29205af389ccfd3934ff3471e03879182e85ff3c51512f2f7d23c24bc46b",
+      "bundle_tokens": 1093,
+      "reason": null,
+      "success": true
+    },
+    "dependency-trap/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "ref-cheap",
+        "resolver-tool"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "6d653abdbde0593701ef28d08c2be18963f00d8585351fd29f72cd2369e82690",
+      "bundle_tokens": 789,
+      "reason": null,
+      "success": true
+    },
+    "heterogeneous-basic/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "rule-req",
+        "taskreq-1",
+        "anchor-disc",
+        "harmful-h",
+        "mem-pref",
+        "tool-disc"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "2c3a950346850d0a9b9da98fac9501387bc7a2b3dc0b068e0f787b3615428c2c",
+      "bundle_tokens": 711,
+      "reason": null,
+      "success": true
+    },
+    "heterogeneous-basic/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "rule-req",
+        "taskreq-1",
+        "anchor-disc",
+        "harmful-h",
+        "mem-pref",
+        "tool-disc",
+        "distract-h"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "a77ce55a17ee20f2c9fd263ddbd73b9a8d61d35fbdfde5ce14e377c5fd2d6287",
+      "bundle_tokens": 965,
+      "reason": null,
+      "success": true
+    },
+    "heterogeneous-basic/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "rule-req",
+        "taskreq-1",
+        "mem-pref",
+        "tool-disc"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "9aa47d5a3e331dab9883e00e76f8d76f76de4fb9cffe875bd1a9f03d03aa2e8f",
+      "bundle_tokens": 493,
+      "reason": null,
+      "success": true
+    },
+    "mandatory-overflow/medium": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "mand-b"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "INSUFFICIENT_BUDGET",
+      "success": false
+    },
+    "mandatory-overflow/roomy": {
+      "admitted_ids": [
+        "mand-a",
+        "mand-b",
+        "small-disc"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "3a1c23414b68611efe56cb56fad932db89c762fb58eec1ec1a94c35deae4cec0",
+      "bundle_tokens": 4565,
+      "reason": null,
+      "success": true
+    },
+    "mandatory-overflow/tight": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "mand-b"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "INSUFFICIENT_BUDGET",
+      "success": false
+    },
+    "no-legal-representation/medium": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "mand-low"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "NO_LEGAL_REPRESENTATION",
+      "success": false
+    },
+    "no-legal-representation/roomy": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "mand-low"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "NO_LEGAL_REPRESENTATION",
+      "success": false
+    },
+    "no-legal-representation/tight": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "mand-low"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "NO_LEGAL_REPRESENTATION",
+      "success": false
+    },
+    "qualification-trap/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "claim-positive",
+        "exception-tenant",
+        "distract-2"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "d236bf7ef62fa14178a2e5dfad700088baf0414291c7367336a6622ec07c483c",
+      "bundle_tokens": 523,
+      "reason": null,
+      "success": true
+    },
+    "qualification-trap/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "claim-positive",
+        "exception-tenant",
+        "distract-2"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "d236bf7ef62fa14178a2e5dfad700088baf0414291c7367336a6622ec07c483c",
+      "bundle_tokens": 523,
+      "reason": null,
+      "success": true
+    },
+    "qualification-trap/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "claim-positive",
+        "exception-tenant"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "dd652304e84e50efe148f5505f6a71d86c86afee001bc9ef30fb3024fe81129a",
+      "bundle_tokens": 319,
+      "reason": null,
+      "success": true
+    },
+    "rendered-overflow/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "disc-a"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "b4123a55a51ff78e33032f4f76e02146e30f044d60f12506100d5cccf0ccecda",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "rendered-overflow/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "disc-a"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "b4123a55a51ff78e33032f4f76e02146e30f044d60f12506100d5cccf0ccecda",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "rendered-overflow/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "bc44f07050e995d33ef5519d5e18780110328964d87327cdd931569cd3b5a8a8",
+      "bundle_tokens": 111,
+      "reason": null,
+      "success": true
+    },
+    "representation-alternatives/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "inc-anchor"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "c89b483ebf822959f32ce0f65dbb8230649428ec1fce83b9d83d27bc5d094a1a",
+      "bundle_tokens": 205,
+      "reason": null,
+      "success": true
+    },
+    "representation-alternatives/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "inc-anchor"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "c89b483ebf822959f32ce0f65dbb8230649428ec1fce83b9d83d27bc5d094a1a",
+      "bundle_tokens": 205,
+      "reason": null,
+      "success": true
+    },
+    "representation-alternatives/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "inc-anchor"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "c89b483ebf822959f32ce0f65dbb8230649428ec1fce83b9d83d27bc5d094a1a",
+      "bundle_tokens": 205,
+      "reason": null,
+      "success": true
+    },
+    "required-unavailable/medium": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "ghost-1"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+      "success": false
+    },
+    "required-unavailable/roomy": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "ghost-1"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+      "success": false
+    },
+    "required-unavailable/tight": {
+      "admitted_ids": [],
+      "blocking_ids": [
+        "ghost-1"
+      ],
+      "bundle_hash": null,
+      "bundle_tokens": null,
+      "reason": "REQUIRED_SOURCE_UNAVAILABLE",
+      "success": false
+    },
+    "shared-dependency/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "ref-a",
+        "ref-b",
+        "tool-def"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "130f113e4db213a5a8ea3dae6fdd057af04d82ae32f0636717668aad6db59d37",
+      "bundle_tokens": 468,
+      "reason": null,
+      "success": true
+    },
+    "shared-dependency/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "ref-a",
+        "ref-b",
+        "tool-def"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "130f113e4db213a5a8ea3dae6fdd057af04d82ae32f0636717668aad6db59d37",
+      "bundle_tokens": 468,
+      "reason": null,
+      "success": true
+    },
+    "shared-dependency/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "ref-a",
+        "ref-b",
+        "tool-def"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "130f113e4db213a5a8ea3dae6fdd057af04d82ae32f0636717668aad6db59d37",
+      "bundle_tokens": 468,
+      "reason": null,
+      "success": true
+    },
+    "stale-cheap/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "fresh-full"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "3b2095bf95957fc97a785b5905a2aca31b855ac77b60f2129de54976f236cf7d",
+      "bundle_tokens": 715,
+      "reason": null,
+      "success": true
+    },
+    "stale-cheap/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "fresh-full"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "3b2095bf95957fc97a785b5905a2aca31b855ac77b60f2129de54976f236cf7d",
+      "bundle_tokens": 715,
+      "reason": null,
+      "success": true
+    },
+    "stale-cheap/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "fresh-full"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "3b2095bf95957fc97a785b5905a2aca31b855ac77b60f2129de54976f236cf7d",
+      "bundle_tokens": 715,
+      "reason": null,
+      "success": true
+    },
+    "wrong-scope/medium": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "good-evidence"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "39c2af242f314e2d31106e0abe298f55080b47519cb299f0d5cb5d455e50527b",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "wrong-scope/roomy": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "good-evidence"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "39c2af242f314e2d31106e0abe298f55080b47519cb299f0d5cb5d455e50527b",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    },
+    "wrong-scope/tight": {
+      "admitted_ids": [
+        "instr-1",
+        "taskreq-1",
+        "good-evidence"
+      ],
+      "blocking_ids": [],
+      "bundle_hash": "39c2af242f314e2d31106e0abe298f55080b47519cb299f0d5cb5d455e50527b",
+      "bundle_tokens": 265,
+      "reason": null,
+      "success": true
+    }
+  },
+  "compiler_package": "project-context-compiler",
+  "compiler_version": "0.1.0",
+  "note": "Regression tripwire for the external project-context-compiler dependency. NOT book evidence. Regenerate deliberately after reviewed compiler upgrades."
+}

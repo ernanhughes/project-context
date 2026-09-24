@@ -43,7 +43,11 @@ corpus traces. See `docs/stage-0-report.md` for the deferred list and
 ## Stage 3 scope (current)
 
 Deterministic synthetic Context Compiler (book Chapter 22 contract).
-Implemented:
+The canonical implementation now lives in the standalone package
+[`project-context-compiler`](https://github.com/ernanhughes/project-context-compiler);
+this repository consumes it as a pinned dependency and keeps a
+re-export shim under `src/project_context/compiler/`. See
+`docs/compiler-extraction.md`. Implemented:
 
 - versioned compiler records (`ContextCandidate`, `ContextRequest`,
   `CompilerPolicy`, `DecisionTrace`, `CompileFailure`) in

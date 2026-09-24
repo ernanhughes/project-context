@@ -1,27 +1,13 @@
-"""Stage 3 deterministic synthetic Context Compiler.
+"""Compatibility shim: the canonical compiler lives in the external
+`context_compiler` package (project-context-compiler).
 
-Book mapping: Chapter 22 ("Assemble for the Task"). This package turns the
-frozen compiler contract into executable machinery over synthetic,
-versioned candidates. No models, no network, no retrieval, no memory
-system, no tool execution. Every decision is deterministic and traced.
-
-Layout:
-
-```text
-compiler/
-  domain.py    records: candidate, request, policy, trace, failure, result
-  policy.py    CompilerPolicy defaults and JSON loading
-  engine.py    compile_context: eligibility, alternatives, deps, budget, render
-  fixtures.py  strict JSON loaders for compiler-v1 fixture files
-```
-
-Purity rule: engine.py imports only stdlib dataclasses/typing/enum plus
-sibling domain/policy modules and existing domain/telemetry records. It
-never reads files, clocks, randomness, network, or models. A source scan
-test pins this.
+DEPRECATED as an implementation home. This module contains no
+compiler logic; it re-exports the canonical records so existing
+`project_context.compiler.*` imports keep working during migration.
+New code should import `context_compiler` directly.
 """
 
-from project_context.compiler.domain import (
+from context_compiler.domain import (
     COMPILATION_RESULT_SCHEMA,
     COMPILE_FAILURE_SCHEMA,
     CONTEXT_CANDIDATE_SCHEMA,
@@ -32,11 +18,12 @@ from project_context.compiler.domain import (
     ContextCandidate,
     ContextRequest,
     DecisionTrace,
+    FailureReason,
     RequirementClass,
     TraceDecision,
     TraceEntry,
 )
-from project_context.compiler.policy import (
+from context_compiler.policy import (
     COMPILER_POLICY_SCHEMA,
     DEFAULT_POLICY_VERSION,
     CompilerPolicy,
@@ -57,6 +44,7 @@ __all__ = [
     "ContextRequest",
     "DecisionTrace",
     "DEFAULT_POLICY_VERSION",
+    "FailureReason",
     "RequirementClass",
     "TraceDecision",
     "TraceEntry",

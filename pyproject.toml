@@ -6,7 +6,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Ernan Hughes" }]
-dependencies = []
+dependencies = [
+    "project-context-compiler @ git+https://github.com/ernanhughes/project-context-compiler.git@bc2bd54e7565153b6e6d9da7187cda614e9d78fc",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.8"]
@@ -20,6 +22,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/project_context"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

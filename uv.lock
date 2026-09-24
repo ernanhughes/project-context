@@ -42,6 +42,9 @@ wheels = [
 name = "project-context"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "project-context-compiler" },
+]
 
 [package.optional-dependencies]
 dev = [
@@ -51,10 +54,16 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "project-context-compiler", git = "https://github.com/ernanhughes/project-context-compiler.git?rev=bc2bd54e7565153b6e6d9da7187cda614e9d78fc" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8" },
 ]
 provides-extras = ["dev"]
+
+[[package]]
+name = "project-context-compiler"
+version = "0.1.0"
+source = { git = "https://github.com/ernanhughes/project-context-compiler.git?rev=bc2bd54e7565153b6e6d9da7187cda614e9d78fc#bc2bd54e7565153b6e6d9da7187cda614e9d78fc" }
 
 [[package]]
 name = "pygments"
