@@ -1,0 +1,51 @@
+{
+  "corpus_ref": null,
+  "environment": [
+    [
+      "reader",
+      "primary"
+    ],
+    [
+      "reader_adapter",
+      "openai-chat"
+    ],
+    [
+      "reader_model",
+      "mistral-small:latest"
+    ],
+    [
+      "temperature",
+      "0.0"
+    ],
+    [
+      "decoding_seed",
+      "20260923"
+    ],
+    [
+      "response_constraint",
+      "json-schema-enum"
+    ],
+    [
+      "vcs_dirty",
+      "False"
+    ],
+    [
+      "reader_calls",
+      "live-model"
+    ]
+  ],
+  "evidence_class": "synthetic",
+  "experiment_id": "compiler-behavior-v1",
+  "experiment_version": "1",
+  "fixture_id": "compiler-behavior-v1",
+  "fixture_version": "2",
+  "git_commit": "ea95e78f9eec66f8cdbf5f7d4a16d9a024417abe",
+  "model": "synthetic-deterministic-v1",
+  "model_params": [],
+  "policy_version": "compiler-policy-v1",
+  "provider": "synthetic",
+  "run_id": "run-003",
+  "schema_version": "project_context.run_manifest.v1",
+  "seed": null,
+  "timestamp": "2026-09-23T00:00:00Z"
+}

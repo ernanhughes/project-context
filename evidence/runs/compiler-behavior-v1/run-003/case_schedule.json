@@ -1,0 +1,488 @@
+[
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B3__primary__r0",
+    "condition": "B3",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 0
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B5__primary__r0",
+    "condition": "B5",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 1
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B0__primary__r0",
+    "condition": "B0",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 2
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B4__primary__r0",
+    "condition": "B4",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 3
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__BO__primary__r0",
+    "condition": "BO",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 4
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B1__primary__r0",
+    "condition": "B1",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 5
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B2__primary__r0",
+    "condition": "B2",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 6
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__B5__primary__r0",
+    "condition": "B5",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 7
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__BO__primary__r0",
+    "condition": "BO",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 8
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__B2__primary__r0",
+    "condition": "B2",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 9
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__B4__primary__r0",
+    "condition": "B4",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 10
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__B0__primary__r0",
+    "condition": "B0",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 11
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__B1__primary__r0",
+    "condition": "B1",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 12
+  },
+  {
+    "budget": "tight",
+    "case_id": "dependency-trap__tight__B3__primary__r0",
+    "condition": "B3",
+    "fixture": "dependency-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 13
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B1__primary__r0",
+    "condition": "B1",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 14
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B5__primary__r0",
+    "condition": "B5",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 15
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B2__primary__r0",
+    "condition": "B2",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 16
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B3__primary__r0",
+    "condition": "B3",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 17
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B0__primary__r0",
+    "condition": "B0",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 18
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__BO__primary__r0",
+    "condition": "BO",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 19
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B4__primary__r0",
+    "condition": "B4",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 20
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__B1__primary__r0",
+    "condition": "B1",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 21
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__MR__primary__r0",
+    "condition": "MR",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 22
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__MA__primary__r0",
+    "condition": "MA",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 23
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__MT__primary__r0",
+    "condition": "MT",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 24
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__B2__primary__r0",
+    "condition": "B2",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 25
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__B4__primary__r0",
+    "condition": "B4",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 26
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__BO__primary__r0",
+    "condition": "BO",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 27
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__MW__primary__r0",
+    "condition": "MW",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 28
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__B3__primary__r0",
+    "condition": "B3",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 29
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__B5__primary__r0",
+    "condition": "B5",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 30
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__B0__primary__r0",
+    "condition": "B0",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 31
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B0__primary__r0",
+    "condition": "B0",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 32
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B1__primary__r0",
+    "condition": "B1",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 33
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__BO__primary__r0",
+    "condition": "BO",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 34
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B2__primary__r0",
+    "condition": "B2",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 35
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B3__primary__r0",
+    "condition": "B3",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 36
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B5__primary__r0",
+    "condition": "B5",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 37
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B4__primary__r0",
+    "condition": "B4",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 38
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__B3__primary__r0",
+    "condition": "B3",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 39
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__BO__primary__r0",
+    "condition": "BO",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 40
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__B5__primary__r0",
+    "condition": "B5",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 41
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__B0__primary__r0",
+    "condition": "B0",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 42
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__B2__primary__r0",
+    "condition": "B2",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 43
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__B1__primary__r0",
+    "condition": "B1",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 44
+  },
+  {
+    "budget": "tight",
+    "case_id": "wrong-scope__tight__B4__primary__r0",
+    "condition": "B4",
+    "fixture": "wrong-scope",
+    "reader": "primary",
+    "repeat": 0,
+    "sequence": 45
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B5__primary__r1",
+    "condition": "B5",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 1,
+    "sequence": 46
+  },
+  {
+    "budget": "tight",
+    "case_id": "heterogeneous-basic__tight__B5__primary__r2",
+    "condition": "B5",
+    "fixture": "heterogeneous-basic",
+    "reader": "primary",
+    "repeat": 2,
+    "sequence": 47
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B5__primary__r1",
+    "condition": "B5",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 1,
+    "sequence": 48
+  },
+  {
+    "budget": "tight",
+    "case_id": "stale-cheap__tight__B5__primary__r2",
+    "condition": "B5",
+    "fixture": "stale-cheap",
+    "reader": "primary",
+    "repeat": 2,
+    "sequence": 49
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__MA__primary__r1",
+    "condition": "MA",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 1,
+    "sequence": 50
+  },
+  {
+    "budget": "tight",
+    "case_id": "qualification-trap__tight__MA__primary__r2",
+    "condition": "MA",
+    "fixture": "qualification-trap",
+    "reader": "primary",
+    "repeat": 2,
+    "sequence": 51
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B0__primary__r1",
+    "condition": "B0",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 1,
+    "sequence": 52
+  },
+  {
+    "budget": "tight",
+    "case_id": "calibration-echo__tight__B0__primary__r2",
+    "condition": "B0",
+    "fixture": "calibration-echo",
+    "reader": "primary",
+    "repeat": 2,
+    "sequence": 53
+  }
+]

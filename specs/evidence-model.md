@@ -27,9 +27,11 @@ artifact paths under runs/
 
 ## BOOK RESULT
 
-A project result deliberately imported and cited into the manuscript,
-with the experiment ID, run ID, and commit SHA printed alongside the
-claim. Nothing else in the manuscript may be called a result.
+A project result deliberately imported into the manuscript. The prose
+describes the finding in plain language; the experiment ID, run ID, and
+commit SHA are resolvable from the claim through the evidence register
+(`evidence/README.md`) rather than printed in the text. Nothing else in the
+manuscript may be called a result.
 
 ## Labelling rule
 

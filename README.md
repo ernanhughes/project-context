@@ -122,10 +122,11 @@ debugger observes; it changes nothing. See `docs/stage-5-report.md`.
 
 ## Evidence manifests
 
-Frozen runs stay local (`.local/runs/`, git-ignored). `evidence/manifests/`
-pins each run the book cites by artifact digest and recomputed headline
-numbers; `python scripts/evidence_manifest.py --verify` checks them. See
-`evidence/README.md` for the publication policy.
+Runs the book cites are published byte for byte under `evidence/runs/` and
+pinned in `evidence/manifests/` by artifact digest and recomputed headline
+numbers; `python scripts/evidence_manifest.py --verify` checks them on a fresh
+clone. `evidence/README.md` is the register that maps each finding in the book
+to its evidence.
 
 ## Setup
 

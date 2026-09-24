@@ -36,7 +36,7 @@
       "sha256": "5d005513ed20a7417c7892fb53a5396e0026449ce4434e19cbc6f35a4132e3bf"
     }
   ],
-  "artifact_location": ".local/runs/compiler-behavior-v1/run-003-transfer/ (local-only, git-ignored)",
+  "artifact_location": "evidence/runs/compiler-behavior-v1/run-003-transfer/",
   "cited_by_book_chapters": [
     24
   ],
@@ -44,7 +44,7 @@
   "code_commit_subject": "Enforce JSON-schema enum decoding in reader adapter after run-002 parse failure",
   "experiment_id": "compiler-behavior-v1",
   "known_limitations": [
-    "Local-only artifact: the run directory is git-ignored and not published; this manifest pins it by digest so the book's numbers are checkable by anyone holding a copy.",
+    "The artifacts under evidence/runs/ are a byte-for-byte published copy of the machine-local original; this manifest pins them by digest so the book's numbers can be checked by anyone with a clone.",
     "The run's own README (frozen, never edited) reads 'NOT A BOOK RESULT'. That was the label at freeze time; promotion to a book result is made by the book chapters that cite this manifest.",
     "Recorded timestamps are the fixed placeholder 2026-09-23T00:00:00Z, not wall-clock times.",
     "fixtures/compiler-behavior-v1/manifest.json is a frozen fixture record with two stale documentation fields: prompt_version reads 'behavior-prompt-v1' and evidence_note reads 'No model has run'. The prompt actually used, recorded in every behaviour record and in the code, is 'behavior-prompt-v2' (its version_notes explain the amendment). The fixture was not edited.",

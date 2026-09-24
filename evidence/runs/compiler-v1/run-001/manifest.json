@@ -1,0 +1,27 @@
+{
+  "corpus_ref": null,
+  "environment": [
+    [
+      "token_mode",
+      "estimate_tokens-words1.3"
+    ],
+    [
+      "vcs_dirty",
+      "False"
+    ]
+  ],
+  "evidence_class": "synthetic",
+  "experiment_id": "compiler-v1",
+  "experiment_version": "1",
+  "fixture_id": "compiler-v1",
+  "fixture_version": "1",
+  "git_commit": "ec642dc9c15e3822506dbc93e03db7667e297921",
+  "model": "synthetic-deterministic-v1",
+  "model_params": [],
+  "policy_version": "compiler-policy-v1",
+  "provider": "synthetic",
+  "run_id": "run-001",
+  "schema_version": "project_context.run_manifest.v1",
+  "seed": null,
+  "timestamp": "2026-09-23T00:00:00Z"
+}

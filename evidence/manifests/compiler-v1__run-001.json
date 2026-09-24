@@ -26,7 +26,7 @@
       "sha256": "04b2617f539cef7cc81e3ff05c172979affe4174fb901964b9cb3768fc93ecfb"
     }
   ],
-  "artifact_location": ".local/runs/compiler-v1/run-001/ (local-only, git-ignored)",
+  "artifact_location": "evidence/runs/compiler-v1/run-001/",
   "cited_by_book_chapters": [
     23,
     24
@@ -35,7 +35,7 @@
   "code_commit_subject": "Implement deterministic synthetic context compiler",
   "experiment_id": "compiler-v1",
   "known_limitations": [
-    "Local-only artifact: the run directory is git-ignored and not published; this manifest pins it by digest so the book's numbers are checkable by anyone holding a copy.",
+    "The artifacts under evidence/runs/ are a byte-for-byte published copy of the machine-local original; this manifest pins them by digest so the book's numbers can be checked by anyone with a clone.",
     "The run's own README (frozen, never edited) reads 'NOT A BOOK RESULT'. That was the label at freeze time; promotion to a book result is made by the book chapters that cite this manifest.",
     "Recorded timestamps are the fixed placeholder 2026-09-23T00:00:00Z, not wall-clock times."
   ],

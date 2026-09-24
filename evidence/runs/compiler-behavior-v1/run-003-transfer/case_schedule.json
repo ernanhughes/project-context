@@ -1,0 +1,65 @@
+[
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__B0__transfer__r0",
+    "condition": "B0",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 0
+  },
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__B1__transfer__r0",
+    "condition": "B1",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 1
+  },
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__B2__transfer__r0",
+    "condition": "B2",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 2
+  },
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__B3__transfer__r0",
+    "condition": "B3",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 3
+  },
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__B4__transfer__r0",
+    "condition": "B4",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 4
+  },
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__B5__transfer__r0",
+    "condition": "B5",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 5
+  },
+  {
+    "budget": "medium",
+    "case_id": "heterogeneous-basic__medium__BO__transfer__r0",
+    "condition": "BO",
+    "fixture": "heterogeneous-basic",
+    "reader": "transfer",
+    "repeat": 0,
+    "sequence": 6
+  }
+]

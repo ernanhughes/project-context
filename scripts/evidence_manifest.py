@@ -1,9 +1,9 @@
 """Digest-pinned evidence manifests for frozen runs.
 
-The frozen run artifacts under `.local/runs/` are local-only and git-ignored
-(specs/privacy.md: publication needs sanitisation plus recorded human
-approval). This tool makes the book's claims about them auditable without
-publishing them: for each run it writes a committed manifest holding
+Frozen runs that back a published claim are published, byte for byte, under
+`evidence/runs/` (approved in specs/privacy.md; copied by
+scripts/publish_evidence_runs.py). For each such run this tool writes a
+committed manifest holding
 
   - the run identity (experiment, run, code commit, fixture/policy versions);
   - the SHA-256 and byte size of every artifact file;
@@ -11,13 +11,14 @@ publishing them: for each run it writes a committed manifest holding
   - the headline numbers RECOMPUTED from the artifacts (never typed in);
   - known limitations of the recorded run.
 
-`--verify` recomputes everything from the local artifacts and fails if a
+`--verify` recomputes everything from the published artifacts and fails if a
 committed manifest no longer matches, so silent drift in a frozen run, or a
-book number that no longer agrees with the run, is detectable. Verification
-needs the local artifacts; without them the tool says so and exits 2.
+book number that no longer agrees with the run, is detectable. It works on a
+fresh clone. Where the machine-local original under `.local/runs/` also
+exists, it is compared byte for byte with the published copy.
 
-Read-only over `.local/runs/`: it never writes into a run directory
-(specs/evidence-model.md: append-only evidence).
+Read-only over every run directory (specs/evidence-model.md: append-only
+evidence).
 
     python scripts/evidence_manifest.py            # write manifests
     python scripts/evidence_manifest.py --verify   # check committed manifests
@@ -35,7 +36,8 @@ from pathlib import Path
 from typing import Any
 
 REPO = Path(__file__).resolve().parent.parent
-RUNS_ROOT = REPO / ".local" / "runs"
+RUNS_ROOT = REPO / "evidence" / "runs"
+LOCAL_ROOT = REPO / ".local" / "runs"
 OUT_DIR = REPO / "evidence" / "manifests"
 SCHEMA = "project_context.evidence_manifest.v1"
 
@@ -177,9 +179,9 @@ def git_subject(commit: str) -> str | None:
 
 def limitations(experiment: str, environment: dict[str, str]) -> list[str]:
     notes = [
-        "Local-only artifact: the run directory is git-ignored and not published; "
-        "this manifest pins it by digest so the book's numbers are checkable by "
-        "anyone holding a copy.",
+        "The artifacts under evidence/runs/ are a byte-for-byte published copy of the "
+        "machine-local original; this manifest pins them by digest so the book's numbers "
+        "can be checked by anyone with a clone.",
         "The run's own README (frozen, never edited) reads 'NOT A BOOK RESULT'. "
         "That was the label at freeze time; promotion to a book result is made by "
         "the book chapters that cite this manifest.",
@@ -235,7 +237,7 @@ def build_manifest(experiment: str, run: str, chapters: tuple[int, ...]) -> dict
             "policy_version": run_manifest.get("policy_version"),
             "environment": environment,
         },
-        "artifact_location": f".local/runs/{experiment}/{run}/ (local-only, git-ignored)",
+        "artifact_location": f"evidence/runs/{experiment}/{run}/",
         "artifact_files": files,
         "recomputed_summary": summary,
         "known_limitations": limitations(experiment, environment),
@@ -244,6 +246,22 @@ def build_manifest(experiment: str, run: str, chapters: tuple[int, ...]) -> dict
 
 def dump(manifest: dict[str, Any]) -> str:
     return json.dumps(manifest, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
+def local_mismatch(experiment: str, run: str) -> str | None:
+    """Name the first file where the machine-local original differs from the
+    published copy, or None when identical or when no local original exists."""
+    local = LOCAL_ROOT / experiment / run
+    published = RUNS_ROOT / experiment / run
+    if not local.is_dir():
+        return None
+    names = {p.name for p in local.iterdir() if p.is_file()}
+    names |= {p.name for p in published.iterdir() if p.is_file()}
+    for name in sorted(names):
+        left, right = local / name, published / name
+        if not left.is_file() or not right.is_file() or sha256_file(left) != sha256_file(right):
+            return name
+    return None
 
 
 def main() -> int:
@@ -261,6 +279,11 @@ def main() -> int:
             status = max(status, 2)
             continue
         if args.verify:
+            mismatch = local_mismatch(experiment, run)
+            if mismatch:
+                print(f"FAIL {experiment}/{run}: published copy differs from local: {mismatch}")
+                status = 1
+                continue
             if not target.is_file():
                 print(f"FAIL {experiment}/{run}: no committed manifest at {target.name}")
                 status = 1

@@ -75,7 +75,7 @@ def test_manifest_recomputes_numbers_and_pins_files(tool, tmp_path):
     assert set(names) == {"results.json", "manifest.json"}
     assert len(names["results.json"]["sha256"]) == 64
     assert manifest["cited_by_book_chapters"] == [23]
-    assert any("Local-only" in note for note in manifest["known_limitations"])
+    assert any("byte-for-byte published copy" in note for note in manifest["known_limitations"])
 
 
 def test_generation_is_deterministic(tool, tmp_path):
