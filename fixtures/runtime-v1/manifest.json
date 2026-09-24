@@ -1,0 +1,1 @@
+{"cases": ["a-empty", "b-one-ordinary", "c-ledger-pending", "d-mixed", "e-rejected-absent", "f-idempotent", "g-conflict", "h-tampered", "j-privacy-trap"], "evidence_class": "synthetic", "fixture_version": "1", "layout": "{requests,bundles} + truth.json", "note": "Stage 6D synthetic injection fixtures. No model calls; observer compatibility via the existing ingester."}

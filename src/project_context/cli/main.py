@@ -432,6 +432,59 @@ def build_parser() -> argparse.ArgumentParser:
         "replay", help="Re-project a store twice and show the state digest."
     )
     _add_ledger_source(replay_ledger)
+    activate_ledger = ledger_sub.add_parser(
+        "activate", help="Activate ledger state for one structured request."
+    )
+    activate_ledger.add_argument(
+        "source", help="Fixture name (ledger-v1), activation case, or events .jsonl path."
+    )
+    activate_ledger.add_argument(
+        "--request-file", required=True, help="ActivationRequest JSON file."
+    )
+    activate_ledger.add_argument(
+        "--mode",
+        choices=("typed", "all_unresolved", "scope_only", "newest"),
+        default="typed",
+        help="Activation policy mode.",
+    )
+    activate_ledger.add_argument(
+        "--format", choices=("text", "json"), default="text", help="Report format."
+    )
+    eval_ledger = ledger_sub.add_parser(
+        "eval-activations", help="Score activation policies against case oracles."
+    )
+    eval_ledger.add_argument(
+        "suite",
+        nargs="?",
+        default="activation-v1",
+        help="Fixture suite under fixtures/ (default: activation-v1).",
+    )
+    eval_ledger.add_argument(
+        "--format", choices=("text", "json"), default="text", help="Report format."
+    )
+    candidates_ledger = ledger_sub.add_parser(
+        "candidates", help="Adapt ACTIVE ledger items into compiler candidates."
+    )
+    candidates_ledger.add_argument("case", help="Adapter case under fixtures/adapter-v1/cases/.")
+    candidates_ledger.add_argument(
+        "--request-file", required=True, help="ActivationRequest JSON file."
+    )
+    candidates_ledger.add_argument(
+        "--compile",
+        action="store_true",
+        help="Also run the existing deterministic compiler over the mixed pool (synthetic).",
+    )
+    candidates_ledger.add_argument(
+        "--format", choices=("text", "json"), default="text", help="Report format."
+    )
+
+    runtime = sub.add_parser("runtime", help="Explicit synthetic injection harness.")
+    runtime_sub = runtime.add_subparsers(dest="runtime_command", required=True)
+    demo_runtime = runtime_sub.add_parser("demo", help="Render, inject, observe, reconcile.")
+    demo_runtime.add_argument("case", help="Runtime case in fixtures/runtime-v1/truth.json.")
+    demo_runtime.add_argument(
+        "--format", choices=("text", "json"), default="text", help="Report format."
+    )
     return parser
 
 
@@ -1136,6 +1189,392 @@ def cmd_ledger_replay(source: str, output_format: str) -> int:
     return 0 if match else 3
 
 
+ACTIVATION_SUITE_ROOT = Path("fixtures") / "activation-v1"
+
+
+def _activation_case_dir(suite: str, case: str) -> Path:
+    if case.startswith("heldout/"):
+        return Path("fixtures") / suite / "heldout" / case.split("/", 1)[1]
+    return Path("fixtures") / suite / "cases" / case
+
+
+def _activation_case_names(suite: str) -> list[str]:
+    root = Path("fixtures") / suite
+    cases = sorted(p.name for p in (root / "cases").iterdir() if p.is_dir())
+    heldout = root / "heldout"
+    if heldout.is_dir():
+        cases += [f"heldout/{p.name}" for p in sorted(heldout.iterdir()) if p.is_dir()]
+    return cases
+
+
+def _resolve_activation_source(source: str) -> Path:
+    candidate = Path(source)
+    if candidate.is_file():
+        return candidate
+    if source == "ledger-v1":
+        return LEDGER_FIXTURES_ROOT / "events.jsonl"
+    return _activation_case_dir("activation-v1", source) / "events.jsonl"
+
+
+def cmd_ledger_activate(source: str, request_file: str, mode: str, output_format: str) -> int:
+    import json as _json
+
+    from project_context.activation.engine import activate, result_digest
+    from project_context.activation.model import ActivationMode, ActivationPolicy, ActivationRequest
+    from project_context.ledger.projection import project
+    from project_context.ledger.store import load_events
+
+    try:
+        request = ActivationRequest.from_dict(
+            _json.loads(Path(request_file).read_text(encoding="utf-8"))
+        )
+    except (OSError, ValueError) as exc:
+        print(f"ledger: bad request file: {exc}", file=sys.stderr)
+        return 2
+    try:
+        events = load_events(_resolve_activation_source(source))
+        state = project(events)
+    except ValueError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 - ledger errors report, never raise
+        print(f"ledger INVALID: {exc}", file=sys.stderr)
+        return 3
+    policy = ActivationPolicy(mode=ActivationMode(mode))
+    result = activate(state, request, policy)
+    synthetic = "fixtures" in str(_resolve_activation_source(source)).replace("\\", "/")
+    if output_format == "json":
+        print(
+            _json.dumps(
+                {**result.to_dict(), "digest": result_digest(result)},
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    label = " [SYNTHETIC]" if synthetic else ""
+    print(
+        f"Context Ledger Activation{label} (request {request.request_id}, "
+        f"policy {policy.mode.value})"
+    )
+    for state_name in ("active", "dormant", "ineligible", "unknown"):
+        members = [d for d in result.decisions if d.state.value == state_name]
+        if not members:
+            continue
+        print(f"\n{state_name.upper()}")
+        for decision in members:
+            print(f"  {decision.item_id}")
+            print(f"    reason: {', '.join(decision.reason_codes)}")
+            if decision.epistemic is not None:
+                print(f"    epistemic: {decision.epistemic}")
+    return 0
+
+
+def _activation_metrics(truth: dict, result) -> dict:
+    """Oracle comparison for one request. States only; reason codes are
+    asserted separately for the typed policy."""
+    tp = fp = fn = 0
+    scope_leak = stale = superseded = 0
+    unknown = 0
+    for decision in result.decisions:
+        want = truth.get(decision.item_id)
+        if want is None:
+            continue
+        oracle_active = want["state"] == "active"
+        decided_active = decision.state.value == "active"
+        if decision.state.value == "unknown":
+            unknown += 1
+        if decided_active and oracle_active:
+            tp += 1
+        elif decided_active:
+            fp += 1
+            if want.get("repo_mismatch"):
+                scope_leak += 1
+        elif oracle_active:
+            fn += 1
+        if decided_active and want.get("terminal"):
+            stale += 1
+        if decided_active and want.get("superseded"):
+            superseded += 1
+    precision = tp / (tp + fp) if (tp + fp) else None
+    recall = tp / (tp + fn) if (tp + fn) else None
+    return {
+        "true_positive": tp,
+        "false_activation": fp,
+        "missed_activation": fn,
+        "scope_leak": scope_leak,
+        "stale_activation": stale,
+        "superseded_activation": superseded,
+        "unknown": unknown,
+        "precision": precision,
+        "recall": recall,
+    }
+
+
+def cmd_ledger_eval_activations(suite: str, output_format: str) -> int:
+    from project_context.activation.engine import activate
+    from project_context.activation.model import ActivationMode, ActivationPolicy, ActivationRequest
+    from project_context.ledger.projection import project
+    from project_context.ledger.store import load_events
+
+    try:
+        cases = _activation_case_names(suite)
+    except OSError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    if not cases:
+        print(f"ledger: no cases in suite {suite!r}", file=sys.stderr)
+        return 2
+    report: dict[str, Any] = {"suite": suite, "evidence_class": "synthetic", "policies": {}}
+    counter_keys = (
+        "true_positive",
+        "false_activation",
+        "missed_activation",
+        "scope_leak",
+        "stale_activation",
+        "superseded_activation",
+        "unknown",
+        "decisions",
+    )
+    for mode in ActivationMode:
+        policy = ActivationPolicy(mode=mode)
+        totals = dict.fromkeys(counter_keys, 0)
+        per_case = {}
+        for case in cases:
+            case_dir = _activation_case_dir(suite, case)
+            try:
+                state = project(load_events(case_dir / "events.jsonl"))
+                truth_doc = json.loads((case_dir / "truth.json").read_text(encoding="utf-8"))
+            except Exception as exc:  # noqa: BLE001 - eval reports, never raises
+                print(f"ledger INVALID in {case}: {exc}", file=sys.stderr)
+                return 3
+            case_counts = dict.fromkeys(counter_keys, 0)
+            for req_path in sorted((case_dir / "requests").glob("*.json")):
+                request = ActivationRequest.from_dict(
+                    json.loads(req_path.read_text(encoding="utf-8"))
+                )
+                result = activate(state, request, policy)
+                oracle = truth_doc["requests"][request.request_id]
+                enriched = _enrich_oracle(state, oracle, request)
+                metrics = _activation_metrics(enriched, result)
+                for key in case_counts:
+                    if key in metrics:
+                        case_counts[key] += metrics[key]
+                case_counts["decisions"] += len(result.decisions)
+            per_case[case] = case_counts
+            for key, value in case_counts.items():
+                totals[key] += value
+        tp, fp, fn = (
+            totals["true_positive"],
+            totals["false_activation"],
+            totals["missed_activation"],
+        )
+        report["policies"][mode.value] = {
+            **totals,
+            "precision": tp / (tp + fp) if (tp + fp) else None,
+            "recall": tp / (tp + fn) if (tp + fn) else None,
+            "per_case": per_case,
+        }
+    if output_format == "json":
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
+    print(f"Activation evaluation [SYNTHETIC] ({suite}, {len(cases)} cases)")
+    for mode, summary in report["policies"].items():
+        print(
+            f"  {mode}: precision={summary['precision']} recall={summary['recall']} "
+            f"false={summary['false_activation']} missed={summary['missed_activation']} "
+            f"scope_leak={summary['scope_leak']} stale={summary['stale_activation']} "
+            f"superseded={summary['superseded_activation']} unknown={summary['unknown']}"
+        )
+    return 0
+
+
+def _enrich_oracle(state, oracle: dict, request) -> dict:
+    """Annotate oracle entries with ledger facts needed for failure
+    dimensions (terminal status, supersession, repo mismatch). Facts come
+    from the projected state and the request, never from hidden files
+    beyond truth.json."""
+    enriched = {}
+    for item_id, want in oracle.items():
+        flags = dict(want)
+        try:
+            entry = state.get(item_id)
+        except KeyError:
+            flags["terminal"] = False
+            flags["superseded"] = False
+            flags["repo_mismatch"] = False
+            enriched[item_id] = flags
+            continue
+        flags["terminal"] = entry.status.value not in ("active", "blocked")
+        flags["superseded"] = entry.status.value == "superseded"
+        scope_repo = entry.item.scope.repo
+        flags["repo_mismatch"] = bool(scope_repo and request.repo and scope_repo != request.repo)
+        enriched[item_id] = flags
+    return enriched
+
+
+ADAPTER_SUITE_ROOT = Path("fixtures") / "adapter-v1" / "cases"
+
+
+def cmd_ledger_candidates(
+    case: str, request_file: str, do_compile: bool, output_format: str
+) -> int:
+    from project_context.activation.engine import activate
+    from project_context.activation.model import ActivationPolicy, ActivationRequest
+    from project_context.compiler.domain import ContextRequest
+    from project_context.compiler.engine import compile_context
+    from project_context.compiler.fixtures import load_candidate_file
+    from project_context.compiler.policy import CompilerPolicy
+    from project_context.ledger.projection import project
+    from project_context.ledger.store import load_events
+    from project_context.ledger_adapter.adapter import adapt_case
+
+    case_dir = ADAPTER_SUITE_ROOT / case
+    if not (case_dir / "events.jsonl").is_file():
+        print(f"ledger: unknown adapter case {case!r}", file=sys.stderr)
+        return 2
+    try:
+        request = ActivationRequest.from_dict(
+            json.loads(Path(request_file).read_text(encoding="utf-8"))
+        )
+        state = project(load_events(case_dir / "events.jsonl"))
+        ordinary = load_candidate_file(case_dir / "ordinary.candidates.json")
+    except ValueError as exc:
+        print(f"ledger: {exc}", file=sys.stderr)
+        return 2
+    except Exception as exc:  # noqa: BLE001 - ledger errors report, never raise
+        print(f"ledger INVALID: {exc}", file=sys.stderr)
+        return 3
+    result = activate(state, request, ActivationPolicy())
+    pool, receipts = adapt_case(state, result, ordinary)
+    compiled = None
+    if do_compile:
+        try:
+            compile_request = ContextRequest.from_dict(
+                json.loads((case_dir / "compile.json").read_text(encoding="utf-8"))
+            )
+        except ValueError as exc:
+            print(f"ledger: {exc}", file=sys.stderr)
+            return 2
+        policy = CompilerPolicy.from_dict(
+            json.loads(
+                (
+                    Path("experiments") / "compiler-v1" / "policies" / "compiler-policy-v1.json"
+                ).read_text(encoding="utf-8")
+            )
+        )
+        compiled = compile_context(compile_request, list(pool), policy)
+    if output_format == "json":
+        doc: dict[str, Any] = {
+            "case": case,
+            "evidence_class": "synthetic",
+            "activation": result.to_dict(),
+            "candidates": [c.to_dict() for c in pool],
+            "receipts": [r.to_dict() for r in receipts],
+        }
+        if compiled is not None:
+            doc["compile"] = {
+                "success": compiled.result.success,
+                "bundle_tokens": compiled.result.bundle_tokens,
+                "trace": compiled.result.trace.to_dict(),
+                "failure": compiled.result.failure.to_dict() if compiled.result.failure else None,
+            }
+        print(json.dumps(doc, indent=2, sort_keys=True))
+        return 0
+    print(f"Ledger Candidates [SYNTHETIC] (case {case}, request {request.request_id})")
+    print(f"\nACTIVE LEDGER ITEMS ({len([r for r in receipts if r.candidate_id])})")
+    for receipt in receipts:
+        mark = "-> " + receipt.candidate_id if receipt.candidate_id else "(no candidate)"
+        print(f"  {receipt.item_id} [{receipt.activation_state}] {mark}")
+    print(f"\nCONTEXT CANDIDATES ({len(pool)})")
+    for candidate in pool:
+        print(
+            f"  {candidate.candidate_id} [{candidate.requirement.value} "
+            f"{candidate.order_role} {candidate.source_kind}]"
+        )
+    print(f"\nADAPTER RECEIPTS ({len(receipts)})")
+    for receipt in receipts:
+        print(
+            f"  {receipt.item_id}: authority={receipt.mapped_authority} "
+            f"band={receipt.mapped_requirement} epistemic={receipt.epistemic} "
+            f"reason={receipt.reason or '(none)'}"
+        )
+    if compiled is not None:
+        print(
+            f"\nCOMPILE: {'success' if compiled.result.success else 'FAILURE'} "
+            f"tokens={compiled.result.bundle_tokens}"
+        )
+        for entry in compiled.result.trace.entries:
+            print(f"  {entry.candidate_id}: {entry.decision.value} ({entry.reason_code})")
+    return 0
+
+
+RUNTIME_SUITE_ROOT = Path("fixtures") / "runtime-v1"
+
+
+def cmd_runtime_demo(case: str, output_format: str) -> int:
+    from project_context.domain.bundles import ContextBundle
+    from project_context.opencode.bridge import validate_record
+    from project_context.opencode.ingest import ingest_record
+    from project_context.runtime.inject import RUNTIME_MODE, inject
+    from project_context.runtime.model import RenderPolicy
+    from project_context.runtime.reconcile import reconcile
+    from project_context.runtime.render import render_bundle
+
+    truth = json.loads((RUNTIME_SUITE_ROOT / "truth.json").read_text(encoding="utf-8"))
+    cases = truth["cases"]
+    if case not in cases:
+        print(f"runtime: unknown case {case!r}", file=sys.stderr)
+        return 2
+    spec = cases[case]
+    bundle = ContextBundle.from_dict(
+        json.loads((RUNTIME_SUITE_ROOT / "bundles" / spec["bundle"]).read_text(encoding="utf-8"))
+    )
+    request = json.loads(
+        (RUNTIME_SUITE_ROOT / "requests" / spec["request"]).read_text(encoding="utf-8")
+    )
+    rendered = render_bundle(bundle, RenderPolicy())
+    injected, receipt = inject(
+        request,
+        rendered,
+        request_id=f"rt-{case}",
+        mode=RUNTIME_MODE,
+        candidate_ids=tuple(item.id for item in bundle.items),
+    )
+    validation = validate_record(injected)
+    observed_bundle, _ = ingest_record(injected)
+    result = reconcile(receipt, rendered, injected)
+    if output_format == "json":
+        print(
+            json.dumps(
+                {
+                    "case": case,
+                    "evidence_class": "synthetic",
+                    "rendered": rendered.to_dict(),
+                    "receipt": receipt.to_dict(),
+                    "observer_valid": not validation,
+                    "observed_items": len(observed_bundle.items),
+                    "reconciliation": result.to_dict(),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+    print(f"Runtime Demo [SYNTHETIC] (case {case})")
+    print(f"\nSELECTED CANDIDATES ({len(bundle.items)})")
+    for item in bundle.items:
+        print(f"  {item.id} [{item.kind}]")
+    print(f"\nRENDERED BLOCK ({rendered.item_count} items)")
+    print(rendered.text if rendered.text else "  (empty: nothing to inject)")
+    print(f"\nINJECTION\n  {receipt.status}")
+    print(f"\nOBSERVATION\n  valid={not validation} items={len(observed_bundle.items)}")
+    print(f"\nRECONCILIATION\n  {result.status.upper()}")
+    for name, value in result.checks.items():
+        print(f"    {name}: {value}")
+    return 0
+
+
 def _utcnow() -> str:
     from datetime import datetime, timezone
 
@@ -1655,6 +2094,14 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_ledger_validate(args.source, args.format)
     if args.command == "ledger" and args.ledger_command == "replay":
         return cmd_ledger_replay(args.source, args.format)
+    if args.command == "ledger" and args.ledger_command == "activate":
+        return cmd_ledger_activate(args.source, args.request_file, args.mode, args.format)
+    if args.command == "ledger" and args.ledger_command == "eval-activations":
+        return cmd_ledger_eval_activations(args.suite, args.format)
+    if args.command == "ledger" and args.ledger_command == "candidates":
+        return cmd_ledger_candidates(args.case, args.request_file, args.compile, args.format)
+    if args.command == "runtime" and args.runtime_command == "demo":
+        return cmd_runtime_demo(args.case, args.format)
     return 2
 
 

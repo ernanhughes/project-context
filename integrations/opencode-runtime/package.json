@@ -1,0 +1,22 @@
+{
+  "name": "@project-context/opencode-runtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Explicit intervention runtime for Context Lab. Opt-in only; hook mutation contract UNVERIFIED (no live probe).",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/blocks.test.ts",
+    "lint": "prettier --check .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@opencode/plugin": "^2.0.16",
+    "@types/node": "25.0.3",
+    "prettier": "3.9.9",
+    "typescript": "7.0.2"
+  }
+}

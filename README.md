@@ -147,6 +147,82 @@ admission, live injection, automatic extraction, model calls. The
 ledger persists state; it admits nothing to context. Live stores live
 under `.local/ledger/` (git-ignored). See `docs/stage-6a-report.md`.
 
+## Stage 6B scope (current)
+
+Deterministic Context Activation: eligibility-gated, typed relevance
+over projected ledger state (F4B mechanism check, no behaviour).
+Implemented:
+
+- `src/project_context/activation/`: frozen `ActivationRequest`
+  (structured features only, no prose parsing), versioned
+  `ActivationPolicy` (typed production mode plus naive
+  `all_unresolved`/`scope_only`/`newest` comparison modes),
+  `ActivationDecision` (`ACTIVE`/`DORMANT`/`INELIGIBLE`/`UNKNOWN`
+  with stable reason codes, matched scope, epistemic preservation),
+  and pure `activate(state, request, policy)`;
+- `fixtures/activation-v1/` (SYNTHETIC): 10 authored core cases plus
+  8 seeded held-out generated cases with oracle truth (tests and eval
+  CLI only);
+- `experiments/activation-v1/` (frozen eval contract, policy file,
+  deterministic held-out generator with an independent oracle);
+- `contextlab ledger activate|eval-activations` CLI;
+- `tests/test_activation.py` (33 tests) pinning determinism,
+  validity-before-relevance, abstention, bounded propagation,
+  baseline failures, hidden-truth separation, and the compiler /
+  OpenCode boundaries.
+
+Explicitly **not implemented**: candidate conversion, budgeting,
+representation, ordering, injection, extraction, model calls.
+Activation means potentially relevant now, never admitted to context.
+See `docs/stage-6b-report.md`.
+
+## Stage 6C scope (current)
+
+Ledger-to-compiler candidate adapter: ACTIVE ledger state becomes
+ordinary candidates for the unchanged compiler (adapter compatibility
+check, no behaviour). Implemented:
+
+- `src/project_context/ledger_adapter/`: pure `adapt()`/`adapt_case()`
+  plus versioned `LedgerAdapterReceipt` per decision; authority-mapped
+  bands (never mandatory/required), fixed relevance (no ranking),
+  epistemic-preserving content, state-derived identity, remapped
+  dependencies, approximation token costs;
+- `fixtures/adapter-v1/` (SYNTHETIC): 7 compatibility cases with
+  oracle truth (tests and inspection only);
+- `experiments/adapter-v1/` (frozen compatibility contract);
+- `contextlab ledger candidates <case> --request-file … [--compile]`;
+- `tests/test_adapter.py` (29 tests) pinning faithful conversion,
+  metadata preservation, no-privilege behaviour, legacy compiler
+  compatibility, and all boundaries.
+
+Explicitly **not implemented**: runtime injection, OpenCode changes,
+behavioural evaluation. Persistence is not activation; activation is
+not admission; admission is not use. See `docs/stage-6c-report.md`.
+
+## Stage 6D scope (current)
+
+Explicit context runtime injection with independent observation
+(integration check, no behaviour). Implemented:
+
+- `src/project_context/runtime/`: pure `render_bundle()` (one
+  canonical block), explicit opt-in `inject()` (system-append,
+  idempotent, conflicts fail unmutated), deterministic `reconcile()`
+  (receipt + rendered reference vs observed record), versioned
+  receipts and results;
+- `integrations/opencode-runtime/`: separate intervention surface
+  (opt-in only, fail-safe, hook mutation contract explicitly
+  unverified — no live probe);
+- `fixtures/runtime-v1/` (SYNTHETIC): 9-case harness plus tamper
+  variants, observed through the unchanged V2 ingester;
+- `experiments/runtime-v1/` (frozen integration contract);
+- `contextlab runtime demo <case>`;
+- `tests/test_runtime.py` (28 tests) pinning render/inject/observe/
+  reconcile, separation, privacy, and all earlier boundaries.
+
+Explicitly **not implemented**: behavioural evaluation, extraction,
+live campaigns, ordinary-work enablement. The observer remains an
+observer. See `docs/stage-6d-report.md`.
+
 ## Evidence manifests
 
 Runs the book cites are published byte for byte under `evidence/runs/` and

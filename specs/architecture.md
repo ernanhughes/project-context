@@ -197,3 +197,91 @@ Explicitly not here: activation, retrieval, compiler admission, OpenCode
 mutation, extraction, model calls. The ledger cannot admit anything to
 context; a future activator will turn eligible state into ordinary
 `ContextCandidate[]` for the existing compiler.
+
+## Stage 6B — Context Activation (relevance now, not admission)
+
+`src/project_context/activation/` answers one question over a
+projected `LedgerState` plus a structured `ActivationRequest`:
+which valid items have a reason to wake up for this computation.
+
+```text
+LedgerState + ActivationRequest + ActivationPolicy
+        ↓  eligibility gate (terminal, contradicted, repo mismatch)
+eligible items
+        ↓  typed relevance (scope overlap, governed operation,
+           evidence, dependency readiness, one bounded pass)
+ActivationResult: ACTIVE / DORMANT / INELIGIBLE / UNKNOWN + reason codes
+```
+
+States: ACTIVE (explicit reason), DORMANT (valid, no reason),
+INELIGIBLE (barred), UNKNOWN (cannot decide safely; never defaults to
+ACTIVE). Repo equality alone never activates; unresolved never implies
+relevant. Relationship propagation is one snapshot pass over
+`depends_on` only. Naive policy modes (`all_unresolved`, `scope_only`,
+`newest`) exist for comparison and fail the adversarial fixtures.
+Committed fixtures: `fixtures/activation-v1/` (synthetic core cases
+plus seeded held-out cases; oracle truth for tests/eval only).
+Evaluation: `contextlab ledger activate|eval-activations`.
+
+Explicitly not here: ContextCandidate conversion, budgeting,
+representation, ordering, rendering, injection, learned rankers.
+
+## Stage 6C — Ledger-to-Compiler Adapter (ordinary candidates, no privilege)
+
+`src/project_context/ledger_adapter/` turns ACTIVE decisions into
+ordinary `ContextCandidate[]` for the unchanged compiler:
+
+```text
+LedgerState + ActivationResult
+        ↓  ACTIVE only; dormant/ineligible/unknown yield receipts, no candidates
+adapted candidates + ordinary pool
+        ↓  EXISTING staged compiler, unchanged policy
+bundle or explicit failure
+```
+
+No MANDATORY/REQUIRED bands (adapted state earns admission or loses
+it); one fixed relevance for every adapted candidate (no adapter
+ranking); standing derives from ledger authority metadata, never from
+ledger source (pinned by behaviour and source-scan tests); epistemic
+state survives structurally (kind, reasons, receipts) and through the
+content-only render (deterministic status tag on unverified items);
+identity is content-and-state-derived, never timestamped.
+Committed fixtures: `fixtures/adapter-v1/` (7 synthetic compatibility
+cases; oracle truth for tests/inspection only). Evaluation:
+`contextlab ledger candidates <case> --request-file … [--compile]`.
+
+Explicitly not here: runtime injection, OpenCode changes, behavioural
+evaluation. Invariants: persistence is not activation; activation is
+not admission; admission is not use. Ledger provenance never grants
+compiler privilege.
+
+## Stage 6D — Explicit Runtime Injection (intended vs observed)
+
+`src/project_context/runtime/` renders a compiler-selected bundle and
+injects it through an explicit opt-in runtime, while the existing
+observer stays read-only and captures the result independently:
+
+```text
+selected bundle
+        ↓  pure deterministic render (one canonical block, order kept,
+           epistemic tags intact, no unselected content, no rewrites)
+explicit inject (mode=runtime, system-append, idempotent,
+        conflicts fail unmutated, empty selections no-op)
+        ↓  InjectionReceipt (intended: digests, ids, bytes, status)
+model request
+        ↓  EXISTING read-only observer captures actual request
+ReconciliationResult: receipt + rendered reference ↔ observed record
+        (presence, byte-identity, singularity, order, integrity)
+```
+
+Three identities stay distinct: bundle, rendered block, observed
+request. Machine metadata lives in receipts; the model-facing block
+carries kind headers and epistemic tags only. The live hook shape for
+`integrations/opencode-runtime/` is explicitly unverified (no live
+probe); the tested surface is the synthetic harness
+(`fixtures/runtime-v1/`, `contextlab runtime demo`).
+
+Explicitly not here: behavioural evaluation, extraction, placement
+experiments, live campaigns, ordinary-work enablement. Permanent
+separation: the component that changes context is not the component
+that measures context.

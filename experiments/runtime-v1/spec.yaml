@@ -1,0 +1,48 @@
+# Frozen experiment contract: runtime-v1. See specs/experiment-contract.md.
+question: >-
+  Can a compiler-selected bundle be rendered and injected through a
+  separate explicit runtime and independently observed at the
+  model-request boundary without bypassing compiler policy or modifying
+  the observer?
+hypotheses: [H1-render-faithful, H2-inject-explicit, H3-reconcile-detects]
+population: fixtures/runtime-v1 manifest v1 (9 synthetic harness cases)
+independent_variable: post-injection request condition (correct,
+  duplicate, conflicting, tampered variants)
+controlled_variables:
+  - selected bundle per case (frozen bundle JSON)
+  - base request per case (frozen V2-shaped record)
+  - render policy: runtime-render-v1 (one canonical form)
+  - injection location: system-append (single documented choice)
+  - observer: existing V2 ingester, unchanged and read-only
+  - opt-in: runtime mode explicit in every injection
+  - no models, no network, no live sessions
+conditions: [clean, idempotent-repeat, preexisting-conflict,
+  tampered-drop, tampered-duplicate, tampered-reorder, tampered-extra]
+measurements:
+  - render determinism (digest equality across reruns)
+  - selected-item coverage (selected items represented / expected)
+  - unselected leakage (unselected contents in runtime block)
+  - duplication count
+  - order preservation (block last; sections in bundle order)
+  - epistemic-label preservation
+  - injection success and receipt statuses
+  - observer reconciliation success (per-check results)
+  - idempotence (second injection byte-identical)
+  - legacy observer compatibility (ingester accepts injected records)
+success_criteria:
+  - every non-tampered case reconciles PASS with zero leakage
+  - every tampered variant reconciles FAIL with the violated check named
+  - conflicting block fails loudly with no mutation
+  - empty selection mutates nothing
+failure_criteria:
+  - any PASS on a tampered variant
+  - any FAIL on a clean variant
+  - any unselected or private-looking content in a runtime block
+  - any observer read-only violation
+  - nondeterministic rerun output
+falsification:
+  - reconciliation that cannot distinguish tampering (checks vacuous)
+  - an injection path that bypasses the selected bundle
+seed_strategy: none required (no randomness anywhere in the pipeline)
+provider_model: synthetic, no model calls
+cost_ceiling: zero spend (offline harness)
