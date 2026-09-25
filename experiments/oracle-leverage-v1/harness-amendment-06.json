@@ -1,0 +1,43 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "amendment_id": "harness-amendment-06",
+  "reason": "run-002 second attempt failed every D/O slot on integrity_match while injection, capture, markers, order, and attribution were all correct: the Python verifier ASCII-escaped non-ASCII content that the observer hashes as raw UTF-8",
+  "failure": {
+    "attempt": "run-002 second launch (.local/waves/olv1-wave-003), stopped after 6 of 24 slots",
+    "symptom": "D/O slots transport-invalid on integrity_match only; N slots valid",
+    "stage": "harness verification canonicalization, post-observation",
+    "inference_started": true,
+    "subject_model_calls": 6
+  },
+  "root_cause": {
+    "observer": "TypeScript sha256 over JSON.stringify bytes (raw UTF-8, never ASCII-escaped)",
+    "verifier": "Python integrity_of used json.dumps defaults (ensure_ascii=True), escaping e.g. em-dash to \\u2014 before hashing",
+    "why_uncaught": "fixtures and golden captures are ASCII-only by convention, so both forms agreed everywhere tests looked; live model context contains arbitrary Unicode",
+    "evidence": "all 6 observed context records recompute exactly under raw-UTF-8 hashing"
+  },
+  "repair": {
+    "canonicalization": "integrity_of now uses ensure_ascii=False, matching the observer byte-for-byte for all content",
+    "regression_test": "non-ASCII record pins raw-UTF-8 hash and rejects the ASCII-escaped hash",
+    "comment_sync": "observer capture.ts documents raw-UTF-8 explicitly (comment only, no behaviour change)",
+    "bridge_digest": "876505da3031943e820a7571782cac94fbaba6c69f5ab305c7dacec7a767ce9b",
+    "discarded": "partial .local/waves/olv1-wave-003 removed, never promoted to evidence",
+    "restart": "run-002 relaunched fresh (.local/waves/olv1-wave-004) after full preflight with both canaries"
+  },
+  "frozen_experimental_inputs_changed": false,
+  "behavioural_observations_before_amendment": 0,
+  "previous_amendment": "harness-amendment-05",
+  "original_harness_freeze_commit": "e5256e7",
+  "original_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "amendment01_runner_digest": "2b4f60e3fbc27282e4c7d8e3a475413B8bBA1E",
+  "amendment02_runner_digest": "613aa2f28c72d502e9c80c17814b0689ec5cf5d0389ee1cf187e2b82943826f7",
+  "amendment03_runner_digest": "010c359a05cf165989ed7ff6af2e06514d3665d023e220ffc2306f5eed40d084",
+  "amendment04_runner_digest": "79422a340e20d870f166414c6da9320d7c421175bd44b255e646131ac15a1e88",
+  "amendment05_runner_digest": "08c94de28347507bc58b81461b07a13d3a7de44aa8f65ff853d89d4a106c520e",
+  "new_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "new_runner_digest": "08c94de28347507bc58b81461b07a13d3a7de44aa8f65ff853d89d4a106c520e",
+  "result_schema_identity": "project_context.leverage_result.v1",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "experiment_rerun": "run-002 restarted fresh under amendment-06",
+  "amendment_digest": "e58a6c7b4086235aad3cdd8d5a80077db1fe3003583024c4ff5378b59c6719da"
+}

@@ -67,6 +67,41 @@ def test_integrity_digest_matches_canonical_blocks():
         assert record["integrity"]["sha256"] == integrity_of(record)
 
 
+def test_integrity_hashes_raw_utf8_not_ascii_escapes():
+    import hashlib
+
+    from project_context.opencode.bridge import canonicalize
+
+    record = {
+        "system": [{"type": "text", "text": "em—dash and ✓ mark"}],
+        "messages": [],
+        "tools": {},
+        "options": {"temperature": 0.2},
+    }
+    observed = {
+        "system": record["system"],
+        "messages": record["messages"],
+        "tools": record["tools"],
+        "options": record["options"],
+    }
+    raw = hashlib.sha256(
+        json.dumps(
+            canonicalize(observed),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    escaped = hashlib.sha256(
+        json.dumps(canonicalize(observed), sort_keys=True, separators=(",", ":")).encode(
+            "utf-8"
+        )
+    ).hexdigest()
+    assert raw != escaped  # the cases actually differ
+    assert integrity_of(record) == raw
+    assert integrity_of(record) != escaped
+
+
 def test_unknown_schema_rejected():
     assert validate_record({"schema": "project_context.opencode_capture.v9"}) == [
         "unsupported schema: 'project_context.opencode_capture.v9'"

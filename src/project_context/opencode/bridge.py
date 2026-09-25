@@ -119,8 +119,10 @@ def load_capture_dir(directory: Path) -> tuple[list[dict[str, Any]], dict[str, i
 
 def canonicalize(value: Any) -> Any:
     """Canonical form for integrity hashing: object keys sorted
-    recursively, arrays keep order. ASCII-only content keeps this
-    byte-identical with the TypeScript adapter's canonicalize."""
+    recursively, arrays keep order. Byte-identical with the
+    TypeScript adapter's canonicalize for all content, including
+    non-ASCII: both sides hash raw UTF-8 bytes (Python
+    ensure_ascii=False to match JSON.stringify)."""
     if isinstance(value, list):
         return [canonicalize(item) for item in value]
     if isinstance(value, dict):
@@ -130,8 +132,9 @@ def canonicalize(value: Any) -> Any:
 
 def integrity_of(record: dict[str, Any]) -> str:
     """Expected sha256 over the observed blocks {system, messages,
-    tools, options} with compact separators (matching TypeScript
-    JSON.stringify). Used by tests to pin the golden fixture."""
+    tools, options} with compact separators and raw UTF-8 encoding
+    (matching TypeScript JSON.stringify, which never ASCII-escapes).
+    Used by tests to pin the golden fixture."""
     import hashlib
 
     observed = {
@@ -141,7 +144,12 @@ def integrity_of(record: dict[str, Any]) -> str:
         "options": record.get("options"),
     }
     return hashlib.sha256(
-        json.dumps(canonicalize(observed), sort_keys=True, separators=(",", ":")).encode("utf-8")
+        json.dumps(
+            canonicalize(observed),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
     ).hexdigest()
 
 
