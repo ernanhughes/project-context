@@ -1,0 +1,45 @@
+{
+  "artifact_files": [
+    {
+      "bytes": 3139,
+      "name": "runtime-live-6dl.json",
+      "sha256": "df93b3f91f4c7130c45246566c870bf466d3d8806c6a959171b962983164952c"
+    },
+    {
+      "bytes": 4191,
+      "name": "runtime-live-6dr1.json",
+      "sha256": "d3c8decf0e6be60b626857d65b5f6b28917d301f6adf90514a179438df8824ca"
+    }
+  ],
+  "artifact_location": "evidence/qualifications/",
+  "cited_by_book_chapters": [
+    25
+  ],
+  "finding_kind": "transport qualification",
+  "finding_name": "Earlier runtime qualifications",
+  "known_limitations": [
+    "Marker probes of an earlier plugin layout (separate observer and runtime plugins, since replaced by one package). They show injection and independent observation of a fixed marker. They do not involve the compiler.",
+    "The first attempt failed (the marker never reached the observed context) and the second passed after the runtime was repaired. Both are kept.",
+    "Observation is at the OpenCode model-context hook, not the provider wire request.",
+    "Loader and execution gates rest on a server log and an opt-in runtime trace that are local-only and digest-recorded."
+  ],
+  "recomputed_summary": {
+    "runtime-live-6dl": {
+      "all_context_records_pass": false,
+      "attempt": 2,
+      "expected_marker_occurrences_observed": 0,
+      "runtime_revision": "a357c69e03aeb1a16ee2d8b98f348d645d56078b",
+      "synthetic": true,
+      "verdict": "FAIL"
+    },
+    "runtime-live-6dr1": {
+      "all_context_records_pass": true,
+      "attempt": 1,
+      "expected_marker_occurrences_observed": 1,
+      "runtime_revision": "968a91b57abd697ab47ca50b7f789f31f8e0827d",
+      "synthetic": true,
+      "verdict": "PASS"
+    }
+  },
+  "schema_version": "project_context.evidence_manifest.v1"
+}

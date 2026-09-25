@@ -1,0 +1,31 @@
+{
+  "candidates": [
+    {
+      "min_rank": 0,
+      "depends_on": [],
+      "content_identity": "smoke-context",
+      "authority_reason": "",
+      "scope_eligible": true,
+      "is_default_form": true,
+      "token_count": 20,
+      "representation_id": "full",
+      "order_role": "evidence",
+      "token_source": "fixture-declared-counts",
+      "group_required": false,
+      "coverage_keys": [],
+      "source_kind": "synthetic",
+      "freshness_reason": "",
+      "group_id": null,
+      "candidate_id": "smoke-context",
+      "form_rank": 3,
+      "scope_reason": "",
+      "freshness_eligible": true,
+      "content": "smoke compiled content",
+      "requirement": "MANDATORY",
+      "authority_eligible": true,
+      "relevance": 0.5,
+      "source_ref": "smoke",
+      "kind": "evidence"
+    }
+  ]
+}

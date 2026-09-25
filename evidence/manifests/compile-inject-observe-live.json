@@ -1,0 +1,75 @@
+{
+  "artifact_files": [
+    {
+      "bytes": 845,
+      "name": "candidates.json",
+      "sha256": "3c27516ee65f051df7ce6e5fe46e95a59a0848ce9a803cb45e8b7c456ad72555"
+    },
+    {
+      "bytes": 1203,
+      "name": "compiler-canary.json",
+      "sha256": "210878d86cf60286379efd47ad4279bb00c3c682beb18b420d31ce8f485bda7c"
+    },
+    {
+      "bytes": 294,
+      "name": "policy.json",
+      "sha256": "de53eacc8fefe5b40035b05973c65e1593336e212a3eb830714b862d658474ca"
+    },
+    {
+      "bytes": 351,
+      "name": "private-artifacts.json",
+      "sha256": "e3295076249d2823409a18af654a2fcec3ae71ae3a15fd29426fc6ac50e2df6a"
+    },
+    {
+      "bytes": 791,
+      "name": "receipt.json",
+      "sha256": "e87e6429a4f6de444ad8f72a5eb78d5adafa9097896fb8a8816a4240580277b0"
+    },
+    {
+      "bytes": 237,
+      "name": "request.json",
+      "sha256": "9d88389900a7de38cb30ccf7beaaf1aa045d822b6d185383296088cbcb232ea8"
+    },
+    {
+      "bytes": 277,
+      "name": "runtime-trace.jsonl",
+      "sha256": "b51ff10a79c1cd623ffdd8caf24aab2244b9933bbdf2613bb0f34ad261780c15"
+    }
+  ],
+  "artifact_location": "evidence/qualifications/compile-inject-observe-live/",
+  "cited_by_book_chapters": [
+    25
+  ],
+  "finding_kind": "transport qualification",
+  "finding_name": "Live compile-to-observe qualification",
+  "known_limitations": [
+    "One trivial synthetic request with a single one-item bundle. It establishes that the compile, inject and observe chain works end to end at the OpenCode model-context hook. It says nothing about behaviour.",
+    "Observation is at the model-context hook, not the provider wire request. Provider-side rewriting, added material, cache decisions and the model's internal representation are not observed.",
+    "Token counts in the bundle are the compiler's word-based estimate and the candidate's declared count, not provider-reported counts.",
+    "The observer's capture record contains the full model context, including system prompts, and stays private. Its digest is recorded in private-artifacts.json so the local original can be checked against this frozen finding by its owner.",
+    "The scratch directory's evidence.json and model output are not published: the first holds a machine path and the second is diagnostic only."
+  ],
+  "recomputed_summary": {
+    "canary_status": "PASS",
+    "candidate_count": 1,
+    "compilation_success": true,
+    "compiler_revision": "49f726575f685ddbf839f9b4a53d3f39b8759b2e",
+    "failures": [],
+    "marker_count": 1,
+    "observer_sequence": 1,
+    "receipt_status": "PASS",
+    "reconciliation": {
+      "bundle_hash_match": true,
+      "bundle_id_match": true,
+      "compiler_render_exact": true,
+      "model_match": true,
+      "runtime_exact": true
+    },
+    "requested_model_equals_observed": true,
+    "runtime_outcome": "injected",
+    "system_blocks_after": 5,
+    "system_blocks_before": 4,
+    "usable_token_budget": 500
+  },
+  "schema_version": "project_context.evidence_manifest.v1"
+}

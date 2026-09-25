@@ -74,6 +74,14 @@ approval is recorded here.
 | `compiler-behavior-v1/run-003` | 2026-09-24 | project author | synthetic tasks, synthetic responses to them; gate passed |
 | `compiler-behavior-v1/run-003-transfer` | 2026-09-24 | project author | as above; gate passed |
 
+Frozen findings that are not runs (`scripts/evidence_findings.py`):
+
+| Finding | Approved | Approver | Basis |
+|---|---|---|---|
+| Live compile-to-observe qualification (six small synthetic files; observer capture kept private, digest only) | 2026-09-25 | project author | synthetic single-item bundle; gate passed; capture withheld because it holds full model context |
+| Instrumentation failure, Earlier runtime qualifications | 2026-09-25 | project author | already committed under `evidence/`; registered by manifest only, no artifact changed |
+| Implementation parity | 2026-09-25 | project author | external artifacts in the public compiler repository; pinned by digest, nothing copied |
+
 Published runs are copied byte for byte to `evidence/runs/`. The gate refuses
 any run that is not `evidence_class: synthetic`, and any file containing a
 machine path, hostname, address, key-like string, credential assignment or

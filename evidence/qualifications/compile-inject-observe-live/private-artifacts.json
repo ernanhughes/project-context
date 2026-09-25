@@ -1,0 +1,9 @@
+{
+  "artifacts": {
+    "observer capture record (captures.jsonl)": {
+      "bytes": 37831,
+      "sha256": "be3e6b6b2f868ff2e32a324f1fe7f7b2a8fb85470cc3f0b8f700281fa8395d30"
+    }
+  },
+  "note": "Digests of private local artifacts that back this finding. The artifacts themselves are not published because they contain full model context."
+}

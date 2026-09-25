@@ -29,6 +29,35 @@ These three predate the programme's preregistration scheme. They were frozen
 before their outcomes were seen, but are labelled *pre-programme*, not
 preregistered.
 
+## Other frozen findings
+
+Not every finding is a run. These four are pinned by digest in the same way, by
+`scripts/evidence_findings.py`, and each has a manifest in `evidence/manifests/`.
+
+| Name in the book | Kind | Artifacts | Manifest |
+|---|---|---|---|
+| Live compile-to-observe qualification | transport qualification | `evidence/qualifications/compile-inject-observe-live/` | `compile-inject-observe-live.json` |
+| Instrumentation failure | inconclusive behavioural wave (24 planned, 24 executed, none valid) | `evidence/oracle-leverage-v1/result.json` | `instrumentation-failure.json` |
+| Earlier runtime qualifications | transport qualifications (one failed attempt, one pass) | `evidence/qualifications/runtime-live-*.json` | `earlier-runtime-qualifications.json` |
+| Implementation parity | structural: TypeScript reproduces the frozen Python outputs on 42 compilations | external, in the compiler repository | `implementation-parity.json` |
+
+The first finding is frozen from one live run of the compile, inject and observe
+chain. Its observer capture contains full model context and stays private; only its
+digest is recorded (`private-artifacts.json`). The third holds two marker probes of
+an earlier plugin layout and does not involve the compiler. The fourth is external:
+its manifest pins the compiler repository's goldens and fixtures by digest and
+records the conformance run at the frozen revision.
+
+```bash
+python scripts/evidence_findings.py            # (re)write these manifests
+python scripts/evidence_findings.py --verify   # 0 ok, 1 drift, 2 artifact absent
+```
+
+The parity finding is verified only where a sibling checkout of the compiler
+repository is present. Historical artifacts are never rewritten: the two trace
+defects in the frozen Python outputs are recorded in the manifest's limitations, and
+a later corrected trace is a new schema, not an edit of these goldens.
+
 ## What a manifest holds
 
 - the run identity and the code revision that produced it;

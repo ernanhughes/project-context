@@ -1,0 +1,42 @@
+{
+  "schema": "project_context.compile_canary.v1",
+  "status": "PASS",
+  "compiler": {
+    "packageVersion": "0.2.3",
+    "revision": "49f726575f685ddbf839f9b4a53d3f39b8759b2e"
+  },
+  "request": {
+    "request_id": "compiler-smoke-req",
+    "policy_version": "compiler-policy-v1"
+  },
+  "compilation": {
+    "success": true,
+    "bundle_id": "compiler-smoke-req-bundle",
+    "bundle_hash": "ce011bd99b456a2cc09034d4335abcaa47440dac4ba1c183eac1cf15cdf0e29a",
+    "bundle_tokens": 29
+  },
+  "render": {
+    "rendered_hash": "66162499659de7c96dd1fb42d1c94f46aabd2dfe82153da613fc203b2e67e6ff"
+  },
+  "transport": {
+    "runtime_block_hash": "0b6d67284cf4e0ce517b281def2de07321a1c0322471c7bde9889ace0b3c1a63",
+    "runtime_outcome": "injected",
+    "pre_blocks": 4,
+    "post_blocks": 5
+  },
+  "observer": {
+    "session_id": "ses_f2a43d9ccffex1guR3JC0uwCTU",
+    "sequence": 1,
+    "observed_model": "opencode-go/muse-spark-1.3-contributor",
+    "marker_count": 1
+  },
+  "reconciliation": {
+    "compiler_render_exact": true,
+    "runtime_exact": true,
+    "bundle_id_match": true,
+    "bundle_hash_match": true,
+    "model_match": true
+  },
+  "failures": [],
+  "completed_at": "2026-09-24T23:24:37.066Z"
+}

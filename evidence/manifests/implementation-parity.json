@@ -1,0 +1,39 @@
+{
+  "artifact_location": "external: conformance/ in the compiler repository",
+  "cited_by_book_chapters": [
+    24
+  ],
+  "finding_kind": "structural: cross-language conformance",
+  "finding_name": "Implementation parity",
+  "known_limitations": [
+    "Parity shows the TypeScript implementation reproduces the frozen Python outputs on 42 compilations. It is a statement of equivalence, not of correctness.",
+    "The frozen Python outputs include two trace defects that the port reproduced faithfully: every dependency_closure is empty, and budget_after equals budget_before. Both are recorded here as part of what parity means. A later corrected trace is a new schema, not a rewrite of these goldens.",
+    "External artifacts: the goldens and fixtures live in the compiler repository. This manifest pins them by digest and records the run of the conformance command at the recorded revision; it cannot re-run Node.",
+    "The 252-way strategy comparison of the compiler-v1 run was produced by the Python implementation and is not part of this parity finding."
+  ],
+  "recomputed_summary": {
+    "fixture_files": 30,
+    "fixture_set_sha256": "f16b421bc32b1a01bf22e610166de1c58115629116aefd6b68c76e801c27d030",
+    "golden_case_files": 42,
+    "golden_files_including_index": 43,
+    "golden_set_sha256": "1b3759dc125d05549f2f335fc6b46858595e0f9d89adbb12f489bd407cb5009b"
+  },
+  "recorded_at_freeze": {
+    "compiler_repository": "https://github.com/ernanhughes/project-context-compiler",
+    "compiler_revision": "49f726575f685ddbf839f9b4a53d3f39b8759b2e",
+    "conformance_cli_output": {
+      "budget_violations": 0,
+      "budgets": 3,
+      "cases": 42,
+      "expected_failure_cases": 8,
+      "fixtures": 14,
+      "result": "PASS",
+      "semantic_mismatches": 0,
+      "serialization_mismatches": 0,
+      "success_cases": 34
+    },
+    "parity_test": "node --test tests/conformance/parity.test.ts: 44 tests, 44 pass, 0 fail",
+    "reference_implementation": "Python, tag python-v0.1.0 in the same repository"
+  },
+  "schema_version": "project_context.evidence_manifest.v1"
+}

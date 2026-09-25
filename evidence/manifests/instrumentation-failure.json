@@ -1,0 +1,34 @@
+{
+  "artifact_files": [
+    {
+      "bytes": 46499,
+      "name": "result.json",
+      "sha256": "a48798547055291b7cff844fea0b48ee063d9ad8cd2f2423292996ce3076bd16"
+    }
+  ],
+  "artifact_location": "evidence/oracle-leverage-v1/",
+  "cited_by_book_chapters": [
+    25,
+    26
+  ],
+  "finding_kind": "inconclusive behavioural wave",
+  "finding_name": "Instrumentation failure",
+  "known_limitations": [
+    "Inconclusive, not a failed behavioural hypothesis. The transport layer failed on every run, so the behavioural question was never tested and nothing here measures whether context helps.",
+    "Per-run graded contents are preserved in the artifact as excluded records for audit only.",
+    "The result file was frozen as recorded; its hard_stop field was appended after its own digest was computed, as the companion result document notes."
+  ],
+  "recomputed_summary": {
+    "completed_runs": 24,
+    "experiment": "oracle-leverage-v1",
+    "hard_stop": null,
+    "observed_context_records": 0,
+    "planned_runs": 24,
+    "transport_fail_runs": 24,
+    "transport_failure_reasons": {
+      "no observed context records": 24
+    },
+    "valid_behavioural_runs": 0
+  },
+  "schema_version": "project_context.evidence_manifest.v1"
+}
