@@ -1,0 +1,30 @@
+{
+  "artifact_files": [
+    {
+      "bytes": 54204,
+      "name": "result-run-002.json",
+      "sha256": "c655bde56f3d1c8a31d91c0165b904e4f56ee66267748bc6edbe27b076a8bf2d"
+    }
+  ],
+  "artifact_location": "evidence/oracle-leverage-v1/",
+  "cited_by_book_chapters": [
+    25,
+    26
+  ],
+  "finding_kind": "behavioural failure under verified transport",
+  "finding_name": "Oracle leverage requalified run",
+  "known_limitations": [
+    "Behavioural failure, not inconclusive: transport passed on every run and oracle context still did not move task success, harm, parsing, utilisation, or adherence relative to the no-context and distractor conditions.",
+    "Task scores are zero in all conditions; the finding is the uniformity across conditions under verified delivery, not an absolute capability claim.",
+    "The result file was frozen as recorded; its hard_stop field was appended after its own digest was computed, as the companion result document notes."
+  ],
+  "recomputed_summary": {
+    "completed_runs": 24,
+    "experiment": "oracle-leverage-v1",
+    "hard_stop": null,
+    "planned_runs": 24,
+    "transport_fail_runs": 0,
+    "valid_behavioural_runs": 24
+  },
+  "schema_version": "project_context.evidence_manifest.v1"
+}
