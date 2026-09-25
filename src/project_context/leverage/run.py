@@ -363,6 +363,7 @@ def build_run_env(run_dir: Path, slot: dict) -> dict[str, str]:
     active and proves absence. Never mutates the parent environment."""
     import os
 
+    run_dir = Path(run_dir).resolve()
     env = dict(os.environ)
     spool_dir = run_dir / "spool"
     spool_dir.mkdir(parents=True, exist_ok=True)
@@ -392,7 +393,7 @@ def execute_slot(
     a second attempt happens only on pre-response provider failure."""
 
     run_id = slot["run_id"]
-    run_dir = wave_dir / run_id
+    run_dir = Path(wave_dir).resolve() / run_id
     if run_dir.exists():
         raise WaveStop(f"run directory not fresh: {run_id}")
     run_dir.mkdir(parents=True)
@@ -905,7 +906,15 @@ def run_wave(
 ) -> dict:
     """Execute schedule slots in recorded order. Hard validity failures
     stop the wave with completed runs preserved; transport failure marks
-    one run invalid and the wave continues. No schedule deviation."""
+    one run invalid and the wave continues. No schedule deviation.
+
+    wave_dir is resolved absolutely first: slot children run with
+    cwd=workspace, so any relative evidence path would resolve inside
+    the model-visible workspace (misplaced spool, unresolvable block
+    file, blind reconciliation). Absolute paths keep all evidence in
+    the run directory and out of model reach."""
+    wave_dir = Path(wave_dir).resolve()
+    fixtures_root = Path(fixtures_root).resolve()
     detail = verify_scheduled_model(schedule, entries=entries)
     if not detail["ok"]:
         raise WaveStop(

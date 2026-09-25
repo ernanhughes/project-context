@@ -801,3 +801,51 @@ def test_compiler_liveness_passes_with_matching_canary(tmp_path):
     report = preflight(entries=GOOD_ENTRIES, compiler_canary=str(canary))
     assert report["checks"]["compiler_liveness"] == "PASS"
     assert report["checks"]["overall"] == "PASS"
+
+
+def test_build_run_env_absolutizes_relative_run_dir(tmp_path, monkeypatch):
+    import os
+
+    from project_context.leverage.run import build_run_env
+
+    schedule = _schedule()
+    slot = _slot(schedule, "olv1-r001")
+    monkeypatch.chdir(tmp_path)
+    env = build_run_env(Path("rel-wave") / "olv1-r001", slot)
+    for key in (
+        "PROJECT_CONTEXT_SPOOL_DIR",
+        "PROJECT_CONTEXT_RUNTIME_TRACE_DIR",
+        "PROJECT_CONTEXT_RUNTIME_BLOCK",
+    ):
+        if slot["condition"] == "N" and key == "PROJECT_CONTEXT_RUNTIME_BLOCK":
+            continue
+        assert os.path.isabs(env[key]), key
+    assert Path(env["PROJECT_CONTEXT_SPOOL_DIR"]).parent.parent.name == "rel-wave"
+
+
+def test_relative_wave_dir_keeps_evidence_out_of_workspace(tmp_path, monkeypatch):
+    from project_context.leverage import run as run_mod
+
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    schedule = _schedule()
+    slot = _slot(schedule, "olv1-r002")
+    abs_fixtures = FIXTURES.resolve()
+    monkeypatch.chdir(elsewhere)
+    run_dir = Path("rel-wave") / slot["run_id"]
+    env = run_mod.build_run_env(run_dir, slot)
+    block_path = Path(env["PROJECT_CONTEXT_RUNTIME_BLOCK"])
+    assert block_path.is_absolute
+    text, digest = run_mod.render_condition_payload(slot, abs_fixtures, block_path)
+    assert text is not None and block_path.is_file()
+    assert block_path.read_text(encoding="utf-8") == text
+    assert block_path.parent == (elsewhere / "rel-wave" / slot["run_id"]).resolve()
+    spool = Path(env["PROJECT_CONTEXT_SPOOL_DIR"])
+    assert spool.is_absolute and spool.parent == block_path.parent
+    stray = [
+        p
+        for p in elsewhere.rglob("*")
+        if p.is_file() and (elsewhere / "rel-wave") not in p.parents
+    ]
+    assert stray == [], stray
+    assert list((elsewhere / "rel-wave").rglob("workspace")) == []

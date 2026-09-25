@@ -1,0 +1,42 @@
+{
+  "experiment_id": "oracle-leverage-v1",
+  "amendment_id": "harness-amendment-05",
+  "reason": "first run-002 attempt produced transport-invalid runs for a harness path bug, not an instrumentation failure: relative wave_dir combined with per-slot cwd=workspace resolved spool/trace/block paths inside the model-visible workspace",
+  "failure": {
+    "attempt": "run-002 first launch, stopped after 12 of 24 slots",
+    "symptom": "every completed slot transport-invalid, empty run-dir spool and trace",
+    "stage": "harness path handling, pre-inference",
+    "inference_started": true,
+    "subject_model_calls": 12
+  },
+  "root_cause": {
+    "relative_wave_dir": "CLI default .local/waves/olv1-wave-002 combined with slot cwd=workspace",
+    "spool": "observer captures landed in workspace/.local/... (also a model-visibility wart)",
+    "block": "runtime block written relative to repo root but resolved relative to workspace, so every injection failed closed with error_load_block and nothing was injected",
+    "trace": "runtime trace records, if any, landed in the workspace instead of the run dir",
+    "reconciliation": "runner inspected the empty run-dir spool and correctly reported no observed context records"
+  },
+  "repair": {
+    "absolutize": "run_wave, execute_slot, and build_run_env resolve wave/run evidence paths absolutely; all evidence stays in the run directory and out of model reach",
+    "regression_tests": "relative run_dir yields absolute env paths; render-to-env-block agreement with foreign cwd and no stray files",
+    "discarded": "partial .local/waves/olv1-wave-002 removed, never promoted to evidence",
+    "restart": "run-002 relaunched fresh under the same name after full preflight with both canaries"
+  },
+  "diagnostic_value": "misplaced captures prove the observer was live; the missing block with clean model runs proves injection fails closed rather than injecting unknown content",
+  "frozen_experimental_inputs_changed": false,
+  "behavioural_observations_before_amendment": 0,
+  "previous_amendment": "harness-amendment-04",
+  "original_harness_freeze_commit": "e5256e7",
+  "original_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "amendment01_runner_digest": "2b4f60e3fbc27282e4c7d8e3a475413B8bBA1E",
+  "amendment02_runner_digest": "613aa2f28c72d502e9c80c17814b0689ec5cf5d0389ee1cf187e2b82943826f7",
+  "amendment03_runner_digest": "010c359a05cf165989ed7ff6af2e06514d3665d023e220ffc2306f5eed40d084",
+  "amendment04_runner_digest": "79422a340e20d870f166414c6da9320d7c421175bd44b255e646131ac15a1e88",
+  "new_grader_digest": "1f7e02f1d1108733ab1c055b9a57071824c1f845115e953abc98d8bfce2d8264",
+  "new_runner_digest": "08c94de28347507bc58b81461b07a13d3a7de44aa8f65ff853d89d4a106c520e",
+  "result_schema_identity": "project_context.leverage_result.v1",
+  "fixture_corpus_digest": "03c0f4790e8cdcffeacfd5fc7342fe612a90d73e750263e539187049616bb8b8",
+  "schedule_digest": "0f0e8b0807c6ae79a18119925c1a7a9a0ba5d999f7fee54c40c82089f22ea39d",
+  "experiment_rerun": "run-002 restarted fresh under amendment-05",
+  "amendment_digest": "1a525ddb16e39f6a5ee47e251e70271e06a89e4e0b2d58ff3496543a375f9aab"
+}
