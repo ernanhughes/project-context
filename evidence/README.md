@@ -31,7 +31,7 @@ preregistered.
 
 ## Other frozen findings
 
-Not every finding is a run. These four are pinned by digest in the same way, by
+Not every finding is a run. These five are pinned by digest in the same way, by
 `scripts/evidence_findings.py`, and each has a manifest in `evidence/manifests/`.
 
 | Name in the book | Kind | Artifacts | Manifest |
@@ -40,13 +40,18 @@ Not every finding is a run. These four are pinned by digest in the same way, by
 | Instrumentation failure | inconclusive behavioural wave (24 planned, 24 executed, none valid) | `evidence/oracle-leverage-v1/result.json` | `instrumentation-failure.json` |
 | Earlier runtime qualifications | transport qualifications (one failed attempt, one pass) | `evidence/qualifications/runtime-live-*.json` | `earlier-runtime-qualifications.json` |
 | Implementation parity | structural: TypeScript reproduces the frozen Python outputs on 42 compilations | external, in the compiler repository | `implementation-parity.json` |
+| Oracle leverage requalified run | behavioural failure under verified transport (24 planned, 24 valid, transport verified on all 24; oracle-authored context, not compiler-selected) | `evidence/oracle-leverage-v1/result-run-002.json`, described in `docs/oracle-leverage-run-002.md` | `oracle-leverage-run-002.json` |
 
 The first finding is frozen from one live run of the compile, inject and observe
 chain. Its observer capture contains full model context and stays private; only its
 digest is recorded (`private-artifacts.json`). The third holds two marker probes of
 an earlier plugin layout and does not involve the compiler. The fourth is external:
 its manifest pins the compiler repository's goldens and fixtures by digest and
-records the conformance run at the frozen revision.
+records the conformance run at the frozen revision. The fifth is the second live wave of
+`oracle-leverage-v1`, run after the first (*Instrumentation failure*) failed its transport
+check; both are kept. Its context was authored from fixture truth and rendered by the
+frozen pipeline, not selected by the compiler. Its result file holds graded records and
+transport reconciliation per run, and it does not preserve the raw model responses.
 
 ```bash
 python scripts/evidence_findings.py            # (re)write these manifests
